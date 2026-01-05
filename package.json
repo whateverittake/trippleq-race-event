@@ -1,0 +1,20 @@
+{
+  "name": "com.trippleq.race-event",
+  "version": "0.1.0",
+  "displayName": "Race Event",
+  "description": "Reusable Race Event core for casual games. Includes database SO, persistence, and unlock integration interfaces.",
+  "unity": "6000.0",
+  "unityRelease": "58f2",
+  "keywords": [
+    "race event",
+    "event",
+    "casual",
+    "sdk"
+  ],
+  "author": {
+    "name": "TrippleQ Studio",
+    "url": "https://github.com/whateverittake/trippleq-race-event"
+  },
+  "dependencies": {},
+  "_fingerprint": "e3ad4379c06f06107473dbd006886a46c736f9e0"
+}

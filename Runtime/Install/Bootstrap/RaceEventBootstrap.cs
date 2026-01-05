@@ -1,0 +1,77 @@
+﻿using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+using static TrippleQ.Event.RaceEvent.Runtime.PopupTypes;
+
+namespace TrippleQ.Event.RaceEvent.Runtime
+{
+    public class RaceEventBootstrap : MonoBehaviour
+    {
+        [SerializeField] List<RaceEventConfigSO> _configSOs;
+
+        private RaceEventService _svc;
+
+        public RaceEventService Service => _svc;
+        public event Action<RaceEventService> OnServiceReady;
+
+        private void Awake()
+        {
+            var kv = new FileKeyValueStorage("TrippleQ.RaceEvent.Save");
+            var storage = new JsonRaceStorage(kv);
+
+            _svc = new RaceEventService();
+            _svc.OnLog += Debug.Log;
+
+            var runtimeConfigs = new List<RaceEventConfig>(_configSOs.Count);
+            for (int i = 0; i < _configSOs.Count; i++)
+            {
+                var so = _configSOs[i];
+                if (so == null) continue;
+                runtimeConfigs.Add(so.ToConfig()); // snapshot
+            }
+
+            _svc.Initialize(
+                configs: runtimeConfigs,
+                storage: storage,
+                initialLevel: 10,
+                isInTutorial: false
+            );
+
+            OnServiceReady?.Invoke(_svc);
+        }
+
+        private void Update()
+        {
+            _svc.Tick(Time.deltaTime);
+
+            if (Input.GetKeyDown(KeyCode.R)) // debug
+            {
+                _svc.Debug_ResetAfterClaimAndAllowNewRun();
+            }
+
+            if(Input.GetKeyDown(KeyCode.T)) // debug
+            {
+                _svc.OnEnterMain(
+                    isInTutorial: false,
+                    localNow: DateTime.Now
+                );
+            }
+        }
+
+        public void DebugWinLevel()
+        {
+            _svc.OnLevelWin(
+                newLevel: _svc.CurrentLevel + 1,
+                isInTutorial: false,
+                localNow: DateTime.Now
+            );
+        }
+
+        private void OnDestroy()
+        {
+            _svc.Dispose();
+        }
+    }
+}
