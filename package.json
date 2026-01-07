@@ -15,6 +15,9 @@
     "name": "TrippleQ Studio",
     "url": "https://github.com/whateverittake/trippleq-race-event"
   },
-  "dependencies": {},
+  "dependencies": 
+  {
+      "com.trippleq.ui-kit": "https://github.com/whateverittake/trippleq-ui-kit.git#main"
+  },
   "_fingerprint": "e3ad4379c06f06107473dbd006886a46c736f9e0"
 }
