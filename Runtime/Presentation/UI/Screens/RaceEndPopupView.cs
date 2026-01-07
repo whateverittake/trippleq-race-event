@@ -1,97 +1,61 @@
+﻿using System;
 using UnityEngine;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
-    public class RaceEndPopupView : MonoBehaviour
+    public class RaceEndPopupView : MonoBehaviour, IRaceEndPopupView
     {
         [SerializeField] GameObject _claimButton, _extendButton;
 
-        private RaceEventService _svc;
+        private Action _onClose;
+        private Action _onClaim;
+        private Action _onExtend;
 
-        private void OnEnable()
+        // ===== Button hooks (gán từ UI Button OnClick) =====
+        public void OnQuitPopup() => _onClose?.Invoke();
+        public void OnClaimReward() => _onClaim?.Invoke();
+        public void OnExtend1H() => _onExtend?.Invoke();
+
+        // ===== IRaceEndPopupView =====
+        public void SetExtendVisible(bool visible)
         {
-            if (_svc != null)
-            {
-                _svc.OnStateChanged += HandleStateChanged;
-                _svc.OnRunUpdated += HandleRunUpdated;
-            }
-
-            UpdateUI();
+            if (_extendButton != null) _extendButton.SetActive(visible);
         }
 
-        private void OnDisable()
+        public void SetClaimState(ClaimButtonState state)
         {
-            if (_svc != null)
-            {
-                _svc.OnStateChanged -= HandleStateChanged;
-                _svc.OnRunUpdated -= HandleRunUpdated;
-            }
+            // Hiện tại prefab chỉ có 1 gameobject claim button,
+            // nên state khác nhau thì mapping đơn giản:
+            // - Ready => show
+            // - còn lại => hide
+            // (Sau này nếu có label/disable state thì nâng cấp)
+            bool show = state == ClaimButtonState.Ready;
+            if (_claimButton != null) _claimButton.SetActive(show);
         }
 
-        private void HandleStateChanged(RaceEventState a, RaceEventState b) => UpdateUI();
-        private void HandleRunUpdated(RaceRun? run) => UpdateUI();
+        public void SetOnClose(Action onClick) => _onClose = onClick;
+        public void SetOnClaim(Action onClick) => _onClaim = onClick;
+        public void SetOnExtend(Action onClick) => _onExtend = onClick;
 
-        private void UpdateUI()
+        // ===== ITrippleQPopupView tối thiểu =====
+        public bool IsVisible => gameObject.activeSelf;
+        public void Show() => gameObject.SetActive(true);
+        public void Hide() => gameObject.SetActive(false);
+
+        public void SetTitle(string title) { }
+        public void SetMessage(string message) { }
+        public void SetPrimary(string label, Action onClick) { }
+        public void SetSecondary(string label, Action onClick) { }
+        public void SetClose(Action onClick) => _onClose = onClick;
+
+        public void SetInteractable(bool interactable)
         {
-            if (_svc == null) return;
-            bool canExtend = _svc.CanExtend1H();
-            _extendButton.SetActive(canExtend);
-
-            var run = _svc.CurrentRun;
-            if (run == null)
-            {
-                _claimButton.SetActive(false);
-                return;
-            }
-
-            if (run.HasClaimed)
-            {
-                SetClaimButtonClaimed();
-            }
-            else if (_svc.CanClaim())
-            {
-                SetClaimButtonReady();
-            }
-            else
-            {
-                SetClaimButtonDisabled();
-            }
+            
         }
 
-        public void Bind(RaceEventService svc)
+        public void SetLoading(bool isLoading)
         {
-            _svc= svc;
-            UpdateUI();
-        }
-
-        private void SetClaimButtonClaimed()
-        {
-            _claimButton.SetActive(false);
-        }
-        private void SetClaimButtonReady()
-        {
-            _claimButton.SetActive(true);
-        }
-        private void SetClaimButtonDisabled()
-        {
-            _claimButton.SetActive(false);
-        }
-
-        public void OnQuitPopup()
-        {
-            gameObject.SetActive(false);
-        }
-
-        public void OnClaimReward()
-        {
-            _svc.Claim();
-            UpdateUI();
-        }
-
-        public void OnExtend1H()
-        {
-            _svc.Extend1H();
-            UpdateUI();
+            
         }
     }
 }

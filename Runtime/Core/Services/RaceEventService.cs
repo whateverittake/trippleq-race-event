@@ -44,6 +44,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public RaceRun? CurrentRun => _run;
         public bool HasRun => _run != null;
 
+        private SearchingPlan _currentSearchingPlan;
+
         /// <summary>
         /// Temporary level mirror (host passes values in).
         /// Later: we'll read from ProgressProvider.
@@ -428,8 +430,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _save.SearchingStartUtcSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
             // Ask UI to show searching popup
-            var plan = new SearchingPlan(ActiveConfigForRunOrCursor().SearchingDurationSeconds);
-            RequestPopup(new PopupRequest(PopupType.Searching, plan));
+            _currentSearchingPlan = new SearchingPlan(ActiveConfigForRunOrCursor().SearchingDurationSeconds);
+            RequestPopup(new PopupRequest(PopupType.Searching, _currentSearchingPlan));
 
             Log("JoinRace accepted -> Searching");
 
@@ -1058,6 +1060,19 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 i--;
 
             return i;
+        }
+
+        public SearchingPlan GetSearchingSnapshot()
+        {
+            var total = ActiveConfigForRunOrCursor().SearchingDurationSeconds;
+            var start = _save.SearchingStartUtcSeconds;
+
+            if (start <= 0) return new SearchingPlan(total);
+
+            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var elapsed = (int)System.Math.Max(0, now - start);
+            var remaining = System.Math.Max(0, total - elapsed);
+            return new SearchingPlan(remaining);
         }
     }
 

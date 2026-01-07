@@ -1,24 +1,40 @@
+﻿using System;
 using UnityEngine;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
-    public class RaceMainPopupView : MonoBehaviour
+    public class RaceMainPopupView : MonoBehaviour, IRaceMainPopupView
     {
-        private RaceEventService _service;
+        private Action _onDebugEndRace;
+        private Action _onClose;
 
-        public void OnQuitPopup()
-       {
-         gameObject.SetActive(false);
-       }
+        // Button hook
+        public void OnClickEndRace() => _onDebugEndRace?.Invoke();
+        public void OnQuitPopup() => _onClose?.Invoke();
 
-        public void Bind(RaceEventService svc)
+        // IRaceMainPopupView
+        public bool IsVisible => gameObject.activeSelf;
+        public void Show() => gameObject.SetActive(true);
+        public void Hide() => gameObject.SetActive(false);
+
+        public void SetTitle(string title) { }     // optional, nếu popup có title text
+        public void SetMessage(string message) { } // optional
+
+        public void SetPrimary(string label, Action onClick) { }
+        public void SetSecondary(string label, Action onClick) { }
+        public void SetClose(Action onClick) => _onClose = onClick;
+
+        public void SetOnEndRace(Action onClick) => _onDebugEndRace = onClick;
+        public void SetOnClose(Action onClick) => _onClose = onClick;
+
+        public void SetInteractable(bool interactable)
         {
-            _service= svc;
+
         }
 
-        public void OnClickEndRace()
+        public void SetLoading(bool isLoading)
         {
-            _service.DebugEndEvent();
+
         }
     }
 }

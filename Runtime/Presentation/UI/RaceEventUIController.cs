@@ -1,6 +1,4 @@
-﻿using System;
-using TMPro;
-using UnityEngine;
+﻿using UnityEngine;
 using static TrippleQ.Event.RaceEvent.Runtime.PopupTypes;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
@@ -17,10 +15,14 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         [SerializeField] private RaceEntryPopupView _entryView;
         [SerializeField] private RaceEventHudWidgetView _hudWidgetView;
 
-        [Header("Debug UI")]
-        [SerializeField] private TMP_Text _iconText;
-
         private RaceEventService _svc;
+
+        private RaceEventHudWidgetPresenter _hudPresenter;
+
+        private RaceEntryPopupPresenter _entryPresenter;
+        private RaceMainPopupPresenter _mainPresenter;
+        private RaceSearchingPopupPresenter _searchingPresenter;
+        private RaceEndPopupPresenter _endPresenter;
 
         private void Awake()
         {
@@ -32,7 +34,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             }
 
             // fallback: chờ signal ready
-            _bootstrap.OnServiceReady += Bind;
+            if (_bootstrap != null) _bootstrap.OnServiceReady += Bind;
+            else Debug.LogError("Missing bootstrap ref");
         }
 
         private void OnDestroy()
@@ -43,6 +46,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             Unbind();
         }
 
+        private void Update()
+        {
+            _hudPresenter?.Tick(Time.deltaTime);
+        }
+
         private void Bind(RaceEventService svc)
         {
             if (_svc == svc) return;
@@ -51,44 +59,41 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _svc = svc;
 
             // --- events ---
-            _svc.OnStateChanged += OnStateChanged;
             _svc.OnPopupRequested += HandlePopup;
-            _svc.OnRunUpdated += OnRunUpdated;
-            _svc.OnRewardGranted += OnRewardGranted;
+
+            bool isInTutorial() => false; // TODO: hook tutorial check
+            // HUD bind
+            _hudPresenter = new RaceEventHudWidgetPresenter(_svc, _hudWidgetView, isInTutorial);
+            _entryPresenter = new RaceEntryPopupPresenter(_svc, isInTutorial);
+            _searchingPresenter= new RaceSearchingPopupPresenter(_svc);
+            _mainPresenter = new RaceMainPopupPresenter(_svc, isInTutorial);
+            _endPresenter= new RaceEndPopupPresenter(_svc);
 
             // --- initial bind snapshot ---
             ReplaySnapshot();
-
-            // HUD bind
-            _hudWidgetView.Bind(_svc, isInTutorialGetter: () => false);
         }
 
         private void Unbind()
         {
+            // đóng và unbind tất cả presenters (quan trọng)
+            HideAll();
+            _entryPresenter = null;
+            _mainPresenter = null;
+            _searchingPresenter = null;
+            _endPresenter = null;
+
+            _hudPresenter?.Dispose();
+            _hudPresenter = null;
+
             if (_svc == null) return;
-
-            _svc.OnStateChanged -= OnStateChanged;
             _svc.OnPopupRequested -= HandlePopup;
-            _svc.OnRunUpdated -= OnRunUpdated;
-            _svc.OnRewardGranted -= OnRewardGranted;
-
             _svc = null;
-        }
-
-        private void OnStateChanged(RaceEventState oldState, RaceEventState newState)
-        {
-            if (_iconText != null) _iconText.text = newState.ToString();
-        }
-
-        private void OnRewardGranted(RaceReward reward)
-        {
-            Debug.Log($"Reward granted: coins={reward.Gold}");
         }
 
         private void HandlePopup(PopupRequest req)
         {
             Debug.Log("HandlePopup: " + req.Type);
-
+            // routing duy nhất của controller
             switch (req.Type)
             {
                 case PopupType.Entry:
@@ -109,117 +114,92 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             }
         }
 
-        private void OnRunUpdated(RaceRun run)
-        {
-            if (run == null)
-            {
-                // clear standings UI
-                return;
-            }
-
-            // update standings UI here if needed
-            // var list = RaceStandings.Compute(run.AllParticipants(), run.GoalLevels);
-
-            // mirror logic bạn đang làm
-            if (_svc.State == RaceEventState.Ended || _svc.State == RaceEventState.ExtendOffer)
-            {
-                _endedView.Bind(_svc);
-                ShowEnd();
-            }
-            else if (_svc.State == RaceEventState.InRace)
-            {
-                _mainPopupView.Bind(_svc);
-            }
-        }
-
         // ---------------- UI actions / show hide ----------------
 
-        public void JoinRace()
+        private void ReplaySnapshot()
         {
-            _svc.JoinRace(isInTutorial: false, localNow: DateTime.Now);
-        }
+            if (_svc == null) return;
 
-        public void OnClickClaim()
-        {
-            _svc.Claim();
-        }
-
-        public void OnClickExtend1H()
-        {
-            _svc.Extend1H();
-        }
-
-        public void OnClickIconRace()
-        {
             switch (_svc.State)
             {
                 case RaceEventState.InRace:
                     ShowMain();
                     break;
+
                 case RaceEventState.Searching:
-                    // do nothing
+                    // nếu Searching cần data req thì:
+                    // ShowSearching(new PopupRequest { Type=PopupType.Searching, Searching = _svc.GetSearchingSnapshot() });
+                    // còn không thì HideAll() hoặc giữ trạng thái hiện tại
+                    //HideAll();
+                    //var plan = _svc.GetSearchingSnapshot(); // thêm hàm này ở service (bên dưới)
+                    //ShowSearching(new PopupRequest { PopupType.Searching, Searching = plan });
                     break;
+
                 case RaceEventState.Ended:
                 case RaceEventState.ExtendOffer:
                     ShowEnd();
                     break;
+
                 case RaceEventState.Eligible:
                     ShowEntry();
                     break;
+
                 default:
                     Debug.Log("OnClickIconRace: not state can show: " + _svc.State);
+                    HideAll();
                     break;
             }
         }
 
+        private void HideAll()
+        {
+            _entryPresenter?.Hide();
+            _entryPresenter?.Unbind();
+
+            _mainPresenter?.Hide();
+            _mainPresenter?.Unbind();
+
+            _searchingPresenter?.Hide();
+            _searchingPresenter?.Unbind();
+
+            _endPresenter?.Hide();
+            _endPresenter?.Unbind();
+        }
+
         private void ShowEntry()
         {
-            _entryView.Bind(_svc);
-            _entryView.gameObject.SetActive(true);
-
-            _searchingView.gameObject.SetActive(false);
-            _mainPopupView.gameObject.SetActive(false);
-            _endedView.gameObject.SetActive(false);
+            HideAll();
+            var v = (IRaceEntryPopupView)_entryView;
+            _entryPresenter.Bind(v);
+            _entryPresenter.Show();
         }
 
         private void ShowSearching(PopupRequest req)
         {
-            _entryView.gameObject.SetActive(false);
-            _searchingView.gameObject.SetActive(true);
-            _mainPopupView.gameObject.SetActive(false);
-            _endedView.gameObject.SetActive(false);
+            HideAll();
 
-            _searchingView.Bind(_svc);
-            _searchingView.Show(req.Searching);
+            _searchingPresenter.SetPlan(req.Searching);
+
+            var v = (IRaceSearchingPopupView)_searchingView;
+            _searchingPresenter.Bind(v);
+            _searchingPresenter.Show();
         }
 
         private void ShowMain()
         {
-            _entryView.gameObject.SetActive(false);
-            _searchingView.gameObject.SetActive(false);
-            _mainPopupView.gameObject.SetActive(true);
-            _endedView.gameObject.SetActive(false);
+            HideAll();
+            var v = (IRaceMainPopupView)_mainPopupView;
+            _mainPresenter.Bind(v);
+            _mainPresenter.Show();
         }
 
         private void ShowEnd()
         {
-            _entryView.gameObject.SetActive(false);
-            _searchingView.gameObject.SetActive(false);
-            _mainPopupView.gameObject.SetActive(false);
-
-            _endedView.Bind(_svc);
-            _endedView.gameObject.SetActive(true);
+            HideAll();
+            var v = (IRaceEndPopupView)_endedView;
+            _endPresenter.Bind(v);
+            _endPresenter.Show();
         }
 
-        private void ReplaySnapshot()
-        {
-            var run = _svc.CurrentRun;
-            if (run == null) return;
-
-            if (_svc.State == RaceEventState.Ended || _svc.State == RaceEventState.ExtendOffer)
-                _endedView.Bind(_svc);
-            else if (_svc.State == RaceEventState.InRace)
-                _mainPopupView.Bind(_svc);
-        }
     }
 }
