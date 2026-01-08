@@ -5692,6 +5692,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Race Event Popup
       objectReference: {fileID: 0}
+    - target: {fileID: 5632994312213344560, guid: 81e67f16dc17ff74e84dee512d2dce95, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5947734473367235612, guid: 81e67f16dc17ff74e84dee512d2dce95, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
