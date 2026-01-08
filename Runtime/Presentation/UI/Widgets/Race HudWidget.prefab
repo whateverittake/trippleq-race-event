@@ -238,6 +238,7 @@ GameObject:
   - component: {fileID: 4008363660754730857}
   - component: {fileID: 7863461612303247675}
   - component: {fileID: 4133985021573667020}
+  - component: {fileID: 7485327728862074739}
   m_Layer: 5
   m_Name: Race HudWidget
   m_TagString: Untagged
@@ -366,6 +367,25 @@ MonoBehaviour:
   _label: {fileID: 5132694061810474477}
   _countdown: {fileID: 7480070552975231222}
   _claimBang: {fileID: 1370167708479733156}
+--- !u!114 &7485327728862074739
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4294768147333577411}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55336e7cf4a93b1499fab37fe0099607, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _bootstrap: {fileID: 0}
+  _searchingView: {fileID: 0}
+  _endedView: {fileID: 0}
+  _mainPopupView: {fileID: 0}
+  _entryView: {fileID: 0}
+  _hudWidgetView: {fileID: 4133985021573667020}
+  _infoPopupView: {fileID: 0}
 --- !u!1 &4408078705086462344
 GameObject:
   m_ObjectHideFlags: 0
