@@ -64,13 +64,14 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             bool isInTutorial() => false; // TODO: hook tutorial check
             // HUD bind
             _hudPresenter = new RaceEventHudWidgetPresenter(_svc, _hudWidgetView, isInTutorial);
+
             _entryPresenter = new RaceEntryPopupPresenter(_svc, isInTutorial);
             _searchingPresenter= new RaceSearchingPopupPresenter(_svc);
             _mainPresenter = new RaceMainPopupPresenter(_svc, isInTutorial);
             _endPresenter= new RaceEndPopupPresenter(_svc);
 
             // --- initial bind snapshot ---
-            ReplaySnapshot();
+            //ReplaySnapshot();
         }
 
         private void Unbind()

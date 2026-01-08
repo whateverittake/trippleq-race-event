@@ -43,6 +43,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void Render()
         {
+            if (View == null) return;
+            if (_svc == null) return;
             // extend
             View.SetExtendVisible(_svc.CanExtend1H());
 

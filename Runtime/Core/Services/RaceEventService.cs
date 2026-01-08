@@ -875,6 +875,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             FinalizeIfTimeUp(utcNow);
 
             Log("DebugEndEvent executed");
+
+            RequestEndedPopup();
         }
 
         /// <summary>
