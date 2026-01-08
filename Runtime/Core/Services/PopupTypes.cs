@@ -11,7 +11,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             Main,
             Ended,
             Claim,
-            LastChance
+            LastChance,
+            Info
         }
 
         public readonly struct SearchingPlan

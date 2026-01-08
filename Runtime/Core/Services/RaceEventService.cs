@@ -242,6 +242,14 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         // Host hooks
         // --------------------
 
+        public void OnEnterInfo()
+        {
+            ThrowIfNotInitialized();
+            Log("OnEnterInfo()");
+
+            RequestPopup(new PopupRequest(PopupType.Info));
+        }
+
         /// <summary>
         /// Host calls this when entering main screen/home scene.
         /// </summary>
@@ -547,6 +555,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // Show main race screen
             RequestPopup(new PopupRequest(PopupType.Main));
             Log("Searching finished -> InRace -> Main");
+        }
+
+        public void RequestPopup(PopupType type)
+        {
+            RequestPopup(new PopupRequest(type));
         }
 
         // --------------------

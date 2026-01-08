@@ -18,6 +18,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         override protected void OnBind()
         {
             View.SetOnEndRace(OnForceEndRace);
+            View.SetOnInfoClick(OnInfoClick);
             View.SetOnClose(Hide);
             // optional: wire close X nếu view có
             View.SetClose(Hide);
@@ -28,11 +29,17 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             View.SetOnEndRace(null);
             View.SetOnClose(null);
             View.SetClose(null);
+            View.SetOnInfoClick(null);
         }
 
         private void OnForceEndRace()
         {
             _svc.DebugEndEvent();
+        }
+
+        private void OnInfoClick()
+        {
+            _svc.OnEnterInfo();
         }
     }
 }

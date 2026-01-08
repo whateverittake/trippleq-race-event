@@ -9,5 +9,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         void SetOnEndRace(Action onClick);
 
         void SetOnClose(Action onClick);
+
+        void SetOnInfoClick(Action onClick);
     }
 }

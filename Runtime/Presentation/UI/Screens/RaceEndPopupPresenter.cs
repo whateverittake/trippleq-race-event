@@ -1,7 +1,4 @@
-﻿using System.Security.Claims;
-using TrippleQ.UiKit;
-using UnityEngine;
-using static UnityEngine.CullingGroup;
+﻿using TrippleQ.UiKit;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {

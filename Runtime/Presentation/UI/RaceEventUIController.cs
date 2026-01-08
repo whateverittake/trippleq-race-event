@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using TrippleQ.UiKit;
+using UnityEngine;
 using static TrippleQ.Event.RaceEvent.Runtime.PopupTypes;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
@@ -14,6 +15,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         [SerializeField] private RaceMainPopupView _mainPopupView;
         [SerializeField] private RaceEntryPopupView _entryView;
         [SerializeField] private RaceEventHudWidgetView _hudWidgetView;
+        [SerializeField] RaceInfoPopupView _infoPopupView;
 
         private RaceEventService _svc;
 
@@ -23,6 +25,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private RaceMainPopupPresenter _mainPresenter;
         private RaceSearchingPopupPresenter _searchingPresenter;
         private RaceEndPopupPresenter _endPresenter;
+        private RaceInfoPopupPresenter _infoPresenter;
 
         private void Awake()
         {
@@ -69,6 +72,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _searchingPresenter= new RaceSearchingPopupPresenter(_svc);
             _mainPresenter = new RaceMainPopupPresenter(_svc, isInTutorial);
             _endPresenter= new RaceEndPopupPresenter(_svc);
+            _infoPresenter= new RaceInfoPopupPresenter(_svc);
 
             // --- initial bind snapshot ---
             //ReplaySnapshot();
@@ -108,6 +112,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                     break;
                 case PopupType.Ended:
                     ShowEnd();
+                    break;
+                case PopupType.Info:
+                    ShowInfo();
                     break;
                 default:
                     Debug.LogWarning("Unhandled popup type: " + req.Type);
@@ -165,6 +172,17 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             _endPresenter?.Hide();
             _endPresenter?.Unbind();
+
+            _infoPresenter?.Hide();
+            _infoPresenter?.Unbind();
+        }
+
+        private void ShowInfo()
+        {
+            HideAll();
+            var v = (ITrippleQPopupView)_infoPopupView;
+            _infoPresenter.Bind(v);
+            _infoPresenter.Show();
         }
 
         private void ShowEntry()

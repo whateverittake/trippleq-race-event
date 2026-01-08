@@ -7,10 +7,13 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     {
         private Action _onDebugEndRace;
         private Action _onClose;
+        private Action _onInfoClick;
 
         // Button hook
         public void OnClickEndRace() => _onDebugEndRace?.Invoke();
         public void OnQuitPopup() => _onClose?.Invoke();
+
+        public void OnClickInfoButton() => _onInfoClick?.Invoke();
 
         // IRaceMainPopupView
         public bool IsVisible => gameObject.activeSelf;
@@ -23,7 +26,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void SetPrimary(string label, Action onClick) { }
         public void SetSecondary(string label, Action onClick) { }
         public void SetClose(Action onClick) => _onClose = onClick;
-
+        public void SetOnInfoClick(Action onClick) => _onInfoClick = onClick;
         public void SetOnEndRace(Action onClick) => _onDebugEndRace = onClick;
         public void SetOnClose(Action onClick) => _onClose = onClick;
 
