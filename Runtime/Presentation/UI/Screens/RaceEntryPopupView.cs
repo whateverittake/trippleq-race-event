@@ -1,10 +1,13 @@
 ﻿using System;
+using TrippleQ.AvatarSystem;
 using UnityEngine;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
     public class RaceEntryPopupView : MonoBehaviour, IRaceEntryPopupView
     {
+        [SerializeField] AvatarItemView _avatar;
+
         private Action _onAgree;
         private Action _onClose;
 
@@ -14,7 +17,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         // IRaceEntryPopupView
         public bool IsVisible => gameObject.activeSelf;
-        public void Show() => gameObject.SetActive(true);
+        public void Show() 
+        {
+            gameObject.SetActive(true);
+            _avatar.Refresh();
+        }
         public void Hide() => gameObject.SetActive(false);
 
         public void SetTitle(string title) { }     // optional, nếu popup có title text

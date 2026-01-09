@@ -1014,6 +1014,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Race Event Popup
       objectReference: {fileID: 0}
+    - target: {fileID: 4868446651785532680, guid: bd88b2af036084043af6927531b7a33d, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4905729143144773870, guid: bd88b2af036084043af6927531b7a33d, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -1092,6 +1096,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4905729143144773870, guid: bd88b2af036084043af6927531b7a33d, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6391263382624757186, guid: bd88b2af036084043af6927531b7a33d, type: 3}
+      propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
