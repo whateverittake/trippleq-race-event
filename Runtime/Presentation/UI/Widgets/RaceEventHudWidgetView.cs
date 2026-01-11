@@ -27,7 +27,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         public void SetOnClick(Action? onClick) => _onClick = onClick;
 
-        public void SetStatus(RaceHudStatus status)
+        public void SetStatus(RaceHudStatus status, string timeRemaining)
         {
             _root.SetActive(status.IsVisible);
             if (!status.IsVisible) return;
@@ -37,7 +37,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _label.text = status.Label;
 
             _countdown.gameObject.SetActive(status.ShowTextCountdown);
-            _countdown.text = FormatHMS(status.Remaining);
+            _countdown.text = timeRemaining;
         }
 
         private static string FormatHMS(TimeSpan t)

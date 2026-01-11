@@ -15,7 +15,7 @@ MonoBehaviour:
   Bots:
   - Id: boss_1
     DisplayName: Kenji
-    AvatarId: 3
+    AvatarId: 2
     Personality: 2
     AvgSecondsPerLevelMin: 300
     AvgSecondsPerLevelMax: 380
@@ -45,7 +45,7 @@ MonoBehaviour:
     StuckMaxMinutes: 90
   - Id: 'normal_1 '
     DisplayName: Linh
-    AvatarId: 3
+    AvatarId: 4
     Personality: 1
     AvgSecondsPerLevelMin: 300
     AvgSecondsPerLevelMax: 380
@@ -60,7 +60,7 @@ MonoBehaviour:
     StuckMaxMinutes: 90
   - Id: normal_2
     DisplayName: Kenji2
-    AvatarId: 3
+    AvatarId: 5
     Personality: 1
     AvgSecondsPerLevelMin: 300
     AvgSecondsPerLevelMax: 380
@@ -75,7 +75,7 @@ MonoBehaviour:
     StuckMaxMinutes: 90
   - Id: normal_3
     DisplayName: Kenji3
-    AvatarId: 3
+    AvatarId: 6
     Personality: 0
     AvgSecondsPerLevelMin: 300
     AvgSecondsPerLevelMax: 380
@@ -90,7 +90,7 @@ MonoBehaviour:
     StuckMaxMinutes: 90
   - Id: normal_4
     DisplayName: Kenji4
-    AvatarId: 3
+    AvatarId: 7
     Personality: 0
     AvgSecondsPerLevelMin: 300
     AvgSecondsPerLevelMax: 380
@@ -105,7 +105,7 @@ MonoBehaviour:
     StuckMaxMinutes: 90
   - Id: normal_5
     DisplayName: Kenji5
-    AvatarId: 3
+    AvatarId: 8
     Personality: 0
     AvgSecondsPerLevelMin: 300
     AvgSecondsPerLevelMax: 380

@@ -52,6 +52,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private void Update()
         {
             _hudPresenter?.Tick(Time.deltaTime);
+
+            _mainPresenter?.Tick(Time.deltaTime);
+            _infoPresenter?.Tick(Time.deltaTime);
         }
 
         private void Bind(RaceEventService svc)
@@ -180,7 +183,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private void ShowInfo()
         {
             HideAll();
-            var v = (ITrippleQPopupView)_infoPopupView;
+            var v = (IRaceInfoPopupView)_infoPopupView;
             _infoPresenter.Bind(v);
             _infoPresenter.Show();
         }

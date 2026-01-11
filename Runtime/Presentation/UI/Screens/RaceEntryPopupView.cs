@@ -33,15 +33,5 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         public void SetOnAgree(Action onClick) => _onAgree = onClick;
         public void SetOnClose(Action onClick) => _onClose = onClick;
-
-        public void SetInteractable(bool interactable)
-        {
-            
-        }
-
-        public void SetLoading(bool isLoading)
-        {
-            
-        }
     }
 }

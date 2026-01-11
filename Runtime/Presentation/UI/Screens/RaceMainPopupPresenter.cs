@@ -1,6 +1,5 @@
 ﻿using System;
 using TrippleQ.UiKit;
-using UnityEngine;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
@@ -8,6 +7,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     {
         private readonly RaceEventService _svc;
         private readonly Func<bool> _isInTutorial;
+
+        private float _refreshAccum = 0f;
 
         public RaceMainPopupPresenter(RaceEventService svc, Func<bool> isInTutorial)
         {
@@ -30,6 +31,37 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             View.SetOnClose(null);
             View.SetClose(null);
             View.SetOnInfoClick(null);
+        }
+
+        protected override void OnAfterShow()
+        {
+            base.OnAfterShow();
+
+            // Initialize data to show on UI
+            if(_svc.CurrentRun == null)
+            {
+                return;
+            }
+
+            View.InitData(_svc.CurrentRun);
+            View.InitDataReward(_svc.GetRewardForRank(1),_svc.GetRewardForRank(2),_svc.GetRewardForRank(3));
+        }
+
+        internal void Tick(float deltaTime)
+        {
+            if (!IsBound) return;
+            var localNow = DateTime.Now;
+            var s = _svc.GetHudStatus(localNow);
+
+            View.SetTimeStatus(_svc.FormatHMS(s.Remaining));
+
+            _refreshAccum += deltaTime;
+            if (_refreshAccum < 1f) return;
+            _refreshAccum = 0f;
+
+            var run = _svc.CurrentRun;
+            if (run != null)
+                View.UpdateData(run);
         }
 
         private void OnForceEndRace()

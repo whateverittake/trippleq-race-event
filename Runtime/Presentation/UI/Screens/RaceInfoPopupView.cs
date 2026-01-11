@@ -1,11 +1,16 @@
 using System;
+using TMPro;
 using TrippleQ.UiKit;
 using UnityEngine;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
-    public class RaceInfoPopupView : MonoBehaviour, ITrippleQPopupView
+    public class RaceInfoPopupView : MonoBehaviour, IRaceInfoPopupView
     {
+        const string _prefix= "Time remaining: ";
+
+        [SerializeField] TMP_Text _timeText;
+
         private Action _onAgree;
 
         public bool IsVisible => gameObject.activeSelf;
@@ -55,6 +60,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void Show()
         {
             gameObject.SetActive(true);
+        }
+
+        public void SetTimeStatus(string v)
+        {
+            _timeText.text = _prefix+v;
         }
     }
 }

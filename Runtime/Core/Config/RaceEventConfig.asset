@@ -19,7 +19,7 @@ MonoBehaviour:
   ResetHourLocal: 4
   EntryCooldownHours: 0
   SearchingDurationSeconds: 4
-  GoalLevels: 20
+  GoalLevels: 10
   PlayersPerRace: 5
   DurationHours: 24
   AllowExtend1H: 1

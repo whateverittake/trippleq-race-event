@@ -9,5 +9,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         void Play(SearchingPlan plan, Action onFinished);
         void Stop();
         void SetOnClose(Action onClick);
+        void RenderUserAvatar();
     }
 }

@@ -11,5 +11,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         void SetOnClose(Action onClick);
 
         void SetOnInfoClick(Action onClick);
+
+        void SetTimeStatus(string text);
+        void InitData(RaceRun currentRun);
+
+        void UpdateData(RaceRun currentRun);
+        void InitDataReward(RaceReward firstRankReward, RaceReward secondRankReward, RaceReward thirdRankReward);
     }
 }

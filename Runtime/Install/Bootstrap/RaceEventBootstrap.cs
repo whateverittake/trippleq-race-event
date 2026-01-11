@@ -29,14 +29,16 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 runtimeConfigs.Add(so.ToConfig()); // snapshot
             }
 
-            _svc.Initialize(
-                configs: runtimeConfigs,
-                storage: storage,
-                initialLevel: 10,
-                isInTutorial: false
-            );
+            StartCoroutine(JsonBotPoolLoader.LoadOrFallbackAsync(pool =>
+            {
+                _svc.Initialize(configs: runtimeConfigs,
+                                storage: storage,
+                                initialLevel: 10,
+                                isInTutorial: false,
+                                pool);
 
-            OnServiceReady?.Invoke(_svc);
+                OnServiceReady?.Invoke(_svc);
+            }));
         }
 
         private void Update()
@@ -54,6 +56,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                     isInTutorial: false,
                     localNow: DateTime.Now
                 );
+            }
+
+            if (Input.GetKeyDown(KeyCode.L)) // debug
+            {
+                _svc.Debug_AdvanceBots();
             }
         }
 

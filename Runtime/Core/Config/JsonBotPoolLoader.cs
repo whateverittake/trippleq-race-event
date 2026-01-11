@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.Collections;
+using System.IO;
 using UnityEngine;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
@@ -31,5 +33,46 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             try { return JsonUtility.FromJson<BotPoolJson>(json) ?? new BotPoolJson(); }
             catch { return new BotPoolJson(); }
         }
+
+        public static IEnumerator LoadOrFallbackAsync(Action<BotPoolJson> onDone)
+        {
+            // 1. Ưu tiên persistent (hotfix)
+            if (File.Exists(PersistentPath))
+            {
+                onDone(FromText(File.ReadAllText(PersistentPath)));
+                yield break;
+            }
+
+            // 2. Load từ StreamingAssets
+#if UNITY_ANDROID && !UNITY_EDITOR
+    using (var req = UnityEngine.Networking.UnityWebRequest.Get(StreamingPath))
+    {
+        yield return req.SendWebRequest();
+
+        if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+        {
+            var json = req.downloadHandler.text;
+
+            // copy sang persistent để lần sau dùng File IO
+            try { File.WriteAllText(PersistentPath, json); } catch { }
+
+            onDone(FromText(json));
+            yield break;
+        }
+    }
+#else
+            if (File.Exists(StreamingPath))
+            {
+                var json = File.ReadAllText(StreamingPath);
+                try { File.WriteAllText(PersistentPath, json); } catch { }
+                onDone(FromText(json));
+                yield break;
+            }
+#endif
+
+            // 3. fallback cuối
+            onDone(new BotPoolJson());
+        }
+
     }
 }

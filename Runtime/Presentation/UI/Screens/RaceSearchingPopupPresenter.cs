@@ -1,4 +1,6 @@
-﻿using TrippleQ.UiKit;
+﻿using TrippleQ.AvatarSystem;
+using TrippleQ.UiKit;
+using UnityEngine;
 using static TrippleQ.Event.RaceEvent.Runtime.PopupTypes;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
@@ -27,6 +29,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         protected override void OnAfterShow()
         {
             // start animation/timer mỗi lần show
+            View.RenderUserAvatar();
             View.Play(_plan, OnFinished);
         }
 

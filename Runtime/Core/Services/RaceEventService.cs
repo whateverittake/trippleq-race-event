@@ -61,7 +61,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             };
         }
 
-        public void Initialize(IReadOnlyList<RaceEventConfig> configs, IRaceStorage storage, int initialLevel, bool isInTutorial)
+        public void Initialize(IReadOnlyList<RaceEventConfig> configs, IRaceStorage storage, int initialLevel, bool isInTutorial, BotPoolJson botPool)
         {
             ThrowIfDisposed();
             if (_initialized) return;
@@ -71,7 +71,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                        : throw new ArgumentException("configs is null/empty", nameof(configs));
 
             _storage = storage ?? throw new ArgumentNullException(nameof(storage));
-            _botPool = JsonBotPoolLoader.LoadOrFallback();
+            _botPool = botPool ?? new BotPoolJson();
 
             var loaded = _storage.Load();
             _save = loaded ?? RaceEventSave.Empty();
@@ -706,7 +706,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             Log($"Race finalized. Winner={_run.WinnerId}, PlayerRank={_run.FinalPlayerRank}");
         }
 
-        private RaceReward GetRewardForRank(int rank)
+        public RaceReward GetRewardForRank(int rank)
         {
             var cfg = ActiveConfigForRunOrCursor(); // run-config
 
@@ -1088,6 +1088,94 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             var elapsed = (int)System.Math.Max(0, now - start);
             var remaining = System.Math.Max(0, total - elapsed);
             return new SearchingPlan(remaining);
+        }
+
+        public string FormatHMS(TimeSpan t)
+        {
+            if (t < TimeSpan.Zero) t = TimeSpan.Zero;
+            int h = (int)t.TotalHours;
+            int m = t.Minutes;
+            int s = t.Seconds;
+            return $"{h:00}:{m:00}:{s:00}";
+        }
+
+        /// <summary>
+        /// DEBUG ONLY:
+        /// Advance bots by exactly one logical step (≈ +1 level for active bots).
+        /// No real time involved.
+        /// </summary>
+        public void Debug_AdvanceBots()
+        {
+            ThrowIfNotInitialized();
+            if (_run == null) { Log("[DEBUG] AdvanceBots ignored (no run)."); return; }
+
+            var utcNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            // baseUtc = mốc mới nhất trong run (để cộng dồn đúng)
+            long baseUtc = utcNow;
+            baseUtc = Math.Max(baseUtc, _run.Player.LastUpdateUtcSeconds);
+            for (int i = 0; i < _run.Opponents.Count; i++)
+                baseUtc = Math.Max(baseUtc, _run.Opponents[i].LastUpdateUtcSeconds);
+
+            // Step: chọn theo BOT CHẬM NHẤT để chắc chắn có ai đó đủ +1
+            // (dùng Max thay vì Avg để tránh trường hợp 341s < secPerLevel của bot)
+            double maxSecPerLevel = 0;
+            int alive = 0;
+            foreach (var b in _run.Opponents)
+            {
+                if (b.HasFinished) continue;
+                maxSecPerLevel = Math.Max(maxSecPerLevel, b.AvgSecondsPerLevel);
+                alive++;
+            }
+
+            if (alive == 0) { Log("[DEBUG] AdvanceBots ignored (all bots finished)."); return; }
+
+            long stepSeconds = (long)Math.Ceiling(maxSecPerLevel) + 1;
+
+            // Retry up to N steps until something changes
+            const int maxTries = 60; // 60 * ~6 phút = ~6 giờ (đủ thoát sleep 5h)
+            int beforeHash = ComputeProgressHash2(_run);
+
+            long fakeUtc = baseUtc;
+            for (int attempt = 1; attempt <= maxTries; attempt++)
+            {
+                fakeUtc += stepSeconds;
+
+                GhostBotSimulator.SimulateBots(_run, fakeUtc);
+
+                int afterHash = ComputeProgressHash2(_run);
+                if (afterHash != beforeHash)
+                {
+                    _save.CurrentRun = _run;
+                    TrySave();
+                    PublishRunUpdated();
+
+                    var dt = DateTimeOffset.FromUnixTimeSeconds(fakeUtc).UtcDateTime;
+                    Log($"[DEBUG] AdvanceBots => changed=TRUE after {attempt} step(s), step={stepSeconds}s, fakeUtc={fakeUtc} (UTC {dt:HH:mm})");
+                    return;
+                }
+            }
+
+            // Nếu tới đây vẫn false: hoặc bots đang bị rule chặn (sleep/stuck cực lâu) hoặc hash thiếu field
+            var dt2 = DateTimeOffset.FromUnixTimeSeconds(fakeUtc).UtcDateTime;
+            Log($"[DEBUG] AdvanceBots => changed=FALSE after {maxTries} tries. step={stepSeconds}s fakeUtc={fakeUtc} (UTC {dt2:HH:mm}). Consider logging sleep/stuck/progress remainder.");
+        }
+
+        private static int ComputeProgressHash2(RaceRun run)
+        {
+            unchecked
+            {
+                int h = 17;
+                h = h * 31 + run.Player.LevelsCompleted;
+                h = h * 31 + (run.Player.HasFinished ? 1 : 0);
+
+                for (int i = 0; i < run.Opponents.Count; i++)
+                {
+                    h = h * 31 + run.Opponents[i].LevelsCompleted;
+                    h = h * 31 + (run.Opponents[i].HasFinished ? 1 : 0);
+                }
+                return h;
+            }
         }
     }
 
