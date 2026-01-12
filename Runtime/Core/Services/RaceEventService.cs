@@ -816,11 +816,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             // if feature off -> hide
             if (!ActiveConfigForRunOrCursor().Enabled)
-                return new RaceHudStatus(false, false, false, TimeSpan.Zero, "NEXT RACE", false);
+                return new RaceHudStatus(false, false, false, TimeSpan.Zero, "Next: ", false);
 
             // If ended & can claim => show claim attention (not sleeping)
             if (State == RaceEventState.Ended && CanClaim())
-                return new RaceHudStatus(true, false, true, TimeSpan.Zero, "CLAIM NOW", false);
+                return new RaceHudStatus(true, false, true, TimeSpan.Zero, "Claim Now", false);
 
             // If in race -> hide widget (hoặc show active icon)
             if (State == RaceEventState.InRace || State == RaceEventState.Searching)
@@ -828,7 +828,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 var nextReset = GetNextResetLocal(localNow);
                 var remaining = nextReset - localNow;
                 if (remaining < TimeSpan.Zero) remaining = TimeSpan.Zero;
-                return new RaceHudStatus(true, false, false, remaining, "END RACE IN",true);
+                return new RaceHudStatus(true, false, false, remaining, "End in: ",true);
             }
 
             // Otherwise: idle/eligible -> if eligible you may show active icon, if not eligible show sleeping + countdown

@@ -14,8 +14,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         [SerializeField] private GameObject _zzzBubble = null!;
         [SerializeField] private Image _icon = null!;
         [SerializeField] private TMP_Text _label = null!;
-        [SerializeField] private TMP_Text _countdown = null!;
         [SerializeField] private GameObject _claimBang = null!; // optional: "!" or shake
+
+        [SerializeField] GameObject _activeObj, _sleepingObj;
 
         private Action? _onClick;
 
@@ -34,19 +35,18 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             _zzzBubble.SetActive(status.IsSleeping);
             _claimBang.SetActive(status.HasClaim);
-            _label.text = status.Label;
 
-            _countdown.gameObject.SetActive(status.ShowTextCountdown);
-            _countdown.text = timeRemaining;
-        }
+            _activeObj.SetActive(!status.IsSleeping);
+            _sleepingObj.SetActive(status.IsSleeping);
 
-        private static string FormatHMS(TimeSpan t)
-        {
-            if (t < TimeSpan.Zero) t = TimeSpan.Zero;
-            int h = (int)t.TotalHours;
-            int m = t.Minutes;
-            int s = t.Seconds;
-            return $"{h:00}:{m:00}:{s:00}";
+            string suffix = string.Empty;
+           
+            if (status.ShowTextCountdown)
+            {
+                suffix = timeRemaining;
+            }
+
+            _label.text = status.Label + suffix;
         }
     }
 }
