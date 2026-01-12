@@ -473,18 +473,30 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             if (levelFilteredPool.Count == 0)
             {
-                Log("Bot pool empty after filtering (should not happen).");
-                return;
+                // fallback: tuyệt đối không được thiếu
+                levelFilteredPool = new List<BotProfile>(pool);
             }
 
-            // 2) Pick theo từng nhóm personality
-            AddFromPool(run, levelFilteredPool, BotPersonality.Boss, comp.BossCount, utcNow);
-            AddFromPool(run, levelFilteredPool, BotPersonality.Normal, comp.NormalCount, utcNow);
-            AddFromPool(run, levelFilteredPool, BotPersonality.Noob, comp.NoobCount, utcNow);
+            // 1) Add theo quota (ưu tiên đúng level trước)
+            AddFromPool(run, levelFilteredPool, BotPersonality.Boss, comp.BossCount, utcNow, allowDuplicate: false);
+            AddFromPool(run, levelFilteredPool, BotPersonality.Normal, comp.NormalCount, utcNow, allowDuplicate: false);
+            AddFromPool(run, levelFilteredPool, BotPersonality.Noob, comp.NoobCount, utcNow, allowDuplicate: false);
 
-            // 3) Safety: nếu vẫn thiếu (pool thiếu bot loại đó) thì fill bằng Normal/Noob
-            while (run.Opponents.Count < need)
-                AddFromPool(run, levelFilteredPool, BotPersonality.Normal, 1, utcNow, allowDuplicate: true);
+            // 2) Nếu thiếu theo từng type -> bù đúng type từ FULL POOL (bất chấp level)
+            EnsurePersonalityCount(run, levelFilteredPool, pool, BotPersonality.Boss, comp.BossCount, utcNow);
+            EnsurePersonalityCount(run, levelFilteredPool, pool, BotPersonality.Normal, comp.NormalCount, utcNow);
+            EnsurePersonalityCount(run, levelFilteredPool, pool, BotPersonality.Noob, comp.NoobCount, utcNow);
+
+            // 3) Nếu vẫn thiếu tổng -> fill bằng bot gần level yêu cầu nhất (bất kỳ type, allowDuplicate)
+            int remaining = need - run.Opponents.Count;
+            if (remaining > 0)
+                FillRemainingClosestLevel(run, pool, remaining, utcNow, CurrentLevel);
+
+            // Tới đây mà vẫn thiếu thì chỉ có thể là pool rỗng
+            if (run.Opponents.Count < need)
+            {
+                Log($"[ERROR] SeedBots cannot fill need={need}, got={run.Opponents.Count}. BotPool empty?");
+            }
 
             // 4) Shuffle để boss không luôn đứng đầu
             Shuffle(run.Opponents);
@@ -945,7 +957,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             comp.BossCount -= dec; extra -= dec;
         }
 
-        private void AddFromPool(
+        private int AddFromPool(
             RaceRun run,
             IReadOnlyList<BotProfile> pool,
             BotPersonality type,
@@ -953,14 +965,17 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             long utcNow,
             bool allowDuplicate = false)
         {
-            if (count <= 0) return;
+            if (count <= 0) return 0;
+            if (pool == null || pool.Count == 0) return 0;
 
             // lọc candidates theo personality
             var candidates = new List<BotProfile>();
             for (int i = 0; i < pool.Count; i++)
                 if (pool[i].Personality == type) candidates.Add(pool[i]);
 
-            if (candidates.Count == 0) return;
+            if (candidates.Count == 0) return 0;
+
+            int added = 0;
 
             // pick random
             for (int k = 0; k < count; k++)
@@ -969,7 +984,86 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
                 if (!allowDuplicate)
                 {
-                    // tránh trùng id trong run
+                    bool existed = false;
+                    for (int j = 0; j < run.Opponents.Count; j++)
+                        if (run.Opponents[j].Id == pick.Id) { existed = true; break; }
+
+                    if (existed) { k--; continue; }
+                }
+
+                run.Opponents.Add(pick.ToRaceParticipant(utcNow));
+                added++;
+            }
+
+            return added;
+        }
+
+        private void EnsurePersonalityCount(
+                                            RaceRun run,
+                                            IReadOnlyList<BotProfile> levelFilteredPool,
+                                            IReadOnlyList<BotProfile> fullPool,
+                                            BotPersonality type,
+                                            int targetCount,
+                                            long utcNow)
+        {
+            if (targetCount <= 0) return;
+
+            int current = 0;
+            for (int i = 0; i < run.Opponents.Count; i++)
+                if (run.Opponents[i].IsBot && run.Opponents[i].Id.StartsWith(type.ToString().ToLowerInvariant()))
+                    current++;
+
+            int need = targetCount - current;
+            if (need <= 0) return;
+
+            // Ưu tiên: trong pool đã filter theo level trước
+            need -= AddFromPool(run, levelFilteredPool, type, need, utcNow, allowDuplicate: false);
+
+            // Nếu vẫn thiếu: lấy từ full pool (bất chấp level)
+            if (need > 0)
+                need -= AddFromPool(run, fullPool, type, need, utcNow, allowDuplicate: true);
+        }
+
+        private void FillRemainingClosestLevel(
+                                                RaceRun run,
+                                                IReadOnlyList<BotProfile> fullPool,
+                                                int remaining,
+                                                long utcNow,
+                                                int playerLevel)
+        {
+            if (remaining <= 0) return;
+            if (fullPool == null || fullPool.Count == 0) return;
+
+            // lấy cụm closest (hàm sẵn có)
+            var closestPool = FilterByPlayerLevelOrClosest(fullPool, playerLevel);
+            if (closestPool == null || closestPool.Count == 0) closestPool = new List<BotProfile>(fullPool);
+
+            // allowDuplicate true để guarantee đủ
+            for (int i = 0; i < remaining; i++)
+            {
+                var pick = closestPool[UnityEngine.Random.Range(0, closestPool.Count)];
+                run.Opponents.Add(pick.ToRaceParticipant(utcNow));
+            }
+        }
+
+        private int AddAnyFromPool(
+                                    RaceRun run,
+                                    IReadOnlyList<BotProfile> pool,
+                                    int count,
+                                    long utcNow,
+                                    bool allowDuplicate = true)
+        {
+            if (count <= 0) return 0;
+            if (pool == null || pool.Count == 0) return 0;
+
+            int added = 0;
+
+            for (int k = 0; k < count; k++)
+            {
+                var pick = pool[UnityEngine.Random.Range(0, pool.Count)];
+
+                if (!allowDuplicate)
+                {
                     bool existed = false;
                     for (int j = 0; j < run.Opponents.Count; j++)
                         if (run.Opponents[j].Id == pick.Id) { existed = true; break; }
@@ -977,7 +1071,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 }
 
                 run.Opponents.Add(pick.ToRaceParticipant(utcNow));
+                added++;
             }
+
+            return added;
         }
 
         private static List<BotProfile> FilterByPlayerLevel(
@@ -1160,6 +1257,105 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             var dt2 = DateTimeOffset.FromUnixTimeSeconds(fakeUtc).UtcDateTime;
             Log($"[DEBUG] AdvanceBots => changed=FALSE after {maxTries} tries. step={stepSeconds}s fakeUtc={fakeUtc} (UTC {dt2:HH:mm}). Consider logging sleep/stuck/progress remainder.");
         }
+
+        /// <summary>
+        /// DEBUG ONLY:
+        /// Advance bots from NOW until race end time.
+        /// Guarantees no infinite loop.
+        /// </summary>
+        public void Debug_AdvanceBotsToEnd()
+        {
+            ThrowIfNotInitialized();
+            if (_run == null)
+            {
+                Log("[DEBUG] AdvanceBotsToEnd ignored (no run).");
+                return;
+            }
+
+            var nowUtc = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            // Base time: mốc mới nhất giữa now / player / bots
+            long baseUtc = nowUtc;
+            baseUtc = Math.Max(baseUtc, _run.Player.LastUpdateUtcSeconds);
+            for (int i = 0; i < _run.Opponents.Count; i++)
+                baseUtc = Math.Max(baseUtc, _run.Opponents[i].LastUpdateUtcSeconds);
+
+            // Nếu race đã hết giờ → finalize luôn
+            if (baseUtc >= _run.EndUtcSeconds)
+            {
+                FinalizeIfTimeUp(baseUtc);
+                Log("[DEBUG] AdvanceBotsToEnd: race already ended.");
+                return;
+            }
+
+            // Tính stepSeconds dựa trên bot chậm nhất (giống Debug_AdvanceBots)
+            double maxSecPerLevel = 0;
+            int alive = 0;
+            foreach (var b in _run.Opponents)
+            {
+                if (b.HasFinished) continue;
+                maxSecPerLevel = Math.Max(maxSecPerLevel, b.AvgSecondsPerLevel);
+                alive++;
+            }
+
+            if (alive == 0)
+            {
+                FinalizeIfTimeUp(baseUtc);
+                Log("[DEBUG] AdvanceBotsToEnd: all bots already finished.");
+                return;
+            }
+
+            long stepSeconds = (long)Math.Ceiling(maxSecPerLevel) + 1;
+
+            // Safety guard: tránh infinite loop
+            const int maxSteps = 2000;
+
+            int beforeHash = ComputeProgressHash2(_run);
+            long fakeUtc = baseUtc;
+            int steps = 0;
+
+            while (fakeUtc < _run.EndUtcSeconds && steps < maxSteps)
+            {
+                fakeUtc += stepSeconds;
+                if (fakeUtc > _run.EndUtcSeconds)
+                    fakeUtc = _run.EndUtcSeconds;
+
+                GhostBotSimulator.SimulateBots(_run, fakeUtc);
+
+                int afterHash = ComputeProgressHash2(_run);
+
+                // Nếu không còn thay đổi nữa → break sớm
+                if (afterHash == beforeHash)
+                {
+                    bool anyAlive = false;
+                    foreach (var b in _run.Opponents)
+                    {
+                        if (!b.HasFinished)
+                        {
+                            anyAlive = true;
+                            break;
+                        }
+                    }
+
+                    if (!anyAlive)
+                        break;
+                }
+
+                beforeHash = afterHash;
+                steps++;
+            }
+
+            // Finalize race nếu tới end
+            FinalizeIfTimeUp(fakeUtc);
+
+            _save.CurrentRun = _run;
+            TrySave();
+            PublishRunUpdated();
+
+            var dt = DateTimeOffset.FromUnixTimeSeconds(fakeUtc).UtcDateTime;
+            Log($"[DEBUG] AdvanceBotsToEnd done. steps={steps}, fakeUtc={fakeUtc} (UTC {dt:HH:mm})");
+        }
+
 
         private static int ComputeProgressHash2(RaceRun run)
         {

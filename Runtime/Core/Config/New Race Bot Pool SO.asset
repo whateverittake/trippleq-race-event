@@ -15,7 +15,7 @@ MonoBehaviour:
   Bots:
   - Id: boss_1
     DisplayName: Kenji
-    AvatarId: 2
+    AvatarId: 3
     Personality: 2
     AvgSecondsPerLevelMin: 300
     AvgSecondsPerLevelMax: 380
@@ -30,91 +30,136 @@ MonoBehaviour:
     StuckMaxMinutes: 90
   - Id: boss_2
     DisplayName: Alex
-    AvatarId: 3
+    AvatarId: 8
     Personality: 2
-    AvgSecondsPerLevelMin: 300
-    AvgSecondsPerLevelMax: 380
+    AvgSecondsPerLevelMin: 320
+    AvgSecondsPerLevelMax: 400
     MinPlayerLevel: 10
-    MaxPlayerLevel: 30
-    TimezoneOffsetMinutes: 540
-    SleepStartLocalHour: 1
+    MaxPlayerLevel: 40
+    TimezoneOffsetMinutes: -300
+    SleepStartLocalHour: 2
     SleepDurationHours: 5
-    JitterPct: 0.08
-    StuckChancePerHour: 0.02
-    StuckMinMinutes: 30
-    StuckMaxMinutes: 90
+    JitterPct: 0.1
+    StuckChancePerHour: 0.025
+    StuckMinMinutes: 45
+    StuckMaxMinutes: 100
   - Id: 'normal_1 '
     DisplayName: Linh
-    AvatarId: 4
+    AvatarId: 1
     Personality: 1
-    AvgSecondsPerLevelMin: 300
-    AvgSecondsPerLevelMax: 380
-    MinPlayerLevel: 10
+    AvgSecondsPerLevelMin: 450
+    AvgSecondsPerLevelMax: 600
+    MinPlayerLevel: 20
     MaxPlayerLevel: 30
-    TimezoneOffsetMinutes: 540
-    SleepStartLocalHour: 1
-    SleepDurationHours: 5
-    JitterPct: 0.08
-    StuckChancePerHour: 0.02
-    StuckMinMinutes: 30
-    StuckMaxMinutes: 90
+    TimezoneOffsetMinutes: 420
+    SleepStartLocalHour: 0
+    SleepDurationHours: 7
+    JitterPct: 0.15
+    StuckChancePerHour: 0.05
+    StuckMinMinutes: 60
+    StuckMaxMinutes: 180
   - Id: normal_2
-    DisplayName: Kenji2
-    AvatarId: 5
-    Personality: 1
-    AvgSecondsPerLevelMin: 300
-    AvgSecondsPerLevelMax: 380
-    MinPlayerLevel: 10
-    MaxPlayerLevel: 30
-    TimezoneOffsetMinutes: 540
-    SleepStartLocalHour: 1
-    SleepDurationHours: 5
-    JitterPct: 0.08
-    StuckChancePerHour: 0.02
-    StuckMinMinutes: 30
-    StuckMaxMinutes: 90
-  - Id: normal_3
-    DisplayName: Kenji3
+    DisplayName: Sakura
     AvatarId: 6
-    Personality: 0
-    AvgSecondsPerLevelMin: 300
-    AvgSecondsPerLevelMax: 380
-    MinPlayerLevel: 10
+    Personality: 1
+    AvgSecondsPerLevelMin: 480
+    AvgSecondsPerLevelMax: 620
+    MinPlayerLevel: 20
     MaxPlayerLevel: 30
     TimezoneOffsetMinutes: 540
-    SleepStartLocalHour: 1
-    SleepDurationHours: 5
-    JitterPct: 0.08
-    StuckChancePerHour: 0.02
-    StuckMinMinutes: 30
-    StuckMaxMinutes: 90
-  - Id: normal_4
-    DisplayName: Kenji4
+    SleepStartLocalHour: 23
+    SleepDurationHours: 7
+    JitterPct: 0.14
+    StuckChancePerHour: 0.045
+    StuckMinMinutes: 60
+    StuckMaxMinutes: 150
+  - Id: normal_3
+    DisplayName: Marco
     AvatarId: 7
-    Personality: 0
-    AvgSecondsPerLevelMin: 300
-    AvgSecondsPerLevelMax: 380
-    MinPlayerLevel: 10
+    Personality: 1
+    AvgSecondsPerLevelMin: 500
+    AvgSecondsPerLevelMax: 650
+    MinPlayerLevel: 20
     MaxPlayerLevel: 30
-    TimezoneOffsetMinutes: 540
-    SleepStartLocalHour: 1
-    SleepDurationHours: 5
-    JitterPct: 0.08
-    StuckChancePerHour: 0.02
-    StuckMinMinutes: 30
-    StuckMaxMinutes: 90
-  - Id: normal_5
-    DisplayName: Kenji5
-    AvatarId: 8
-    Personality: 0
-    AvgSecondsPerLevelMin: 300
-    AvgSecondsPerLevelMax: 380
-    MinPlayerLevel: 10
+    TimezoneOffsetMinutes: 60
+    SleepStartLocalHour: 0
+    SleepDurationHours: 8
+    JitterPct: 0.16
+    StuckChancePerHour: 0.06
+    StuckMinMinutes: 90
+    StuckMaxMinutes: 240
+  - Id: normal_4
+    DisplayName: Nam
+    AvatarId: 2
+    Personality: 1
+    AvgSecondsPerLevelMin: 470
+    AvgSecondsPerLevelMax: 610
+    MinPlayerLevel: 20
     MaxPlayerLevel: 30
-    TimezoneOffsetMinutes: 540
+    TimezoneOffsetMinutes: 420
     SleepStartLocalHour: 1
-    SleepDurationHours: 5
-    JitterPct: 0.08
-    StuckChancePerHour: 0.02
-    StuckMinMinutes: 30
-    StuckMaxMinutes: 90
+    SleepDurationHours: 7
+    JitterPct: 0.15
+    StuckChancePerHour: 0.05
+    StuckMinMinutes: 60
+    StuckMaxMinutes: 200
+  - Id: noob_1
+    DisplayName: H\xF9ng
+    AvatarId: 5
+    Personality: 0
+    AvgSecondsPerLevelMin: 750
+    AvgSecondsPerLevelMax: 950
+    MinPlayerLevel: 20
+    MaxPlayerLevel: 30
+    TimezoneOffsetMinutes: 420
+    SleepStartLocalHour: 22
+    SleepDurationHours: 8
+    JitterPct: 0.22
+    StuckChancePerHour: 0.1
+    StuckMinMinutes: 120
+    StuckMaxMinutes: 360
+  - Id: noob_2
+    DisplayName: Emily
+    AvatarId: 4
+    Personality: 0
+    AvgSecondsPerLevelMin: 800
+    AvgSecondsPerLevelMax: 1000
+    MinPlayerLevel: 20
+    MaxPlayerLevel: 30
+    TimezoneOffsetMinutes: -240
+    SleepStartLocalHour: 23
+    SleepDurationHours: 9
+    JitterPct: 0.25
+    StuckChancePerHour: 0.12
+    StuckMinMinutes: 180
+    StuckMaxMinutes: 420
+  - Id: noob_3
+    DisplayName: Minh
+    AvatarId: 4
+    Personality: 0
+    AvgSecondsPerLevelMin: 700
+    AvgSecondsPerLevelMax: 900
+    MinPlayerLevel: 20
+    MaxPlayerLevel: 30
+    TimezoneOffsetMinutes: 420
+    SleepStartLocalHour: 21
+    SleepDurationHours: 8
+    JitterPct: 0.2
+    StuckChancePerHour: 0.09
+    StuckMinMinutes: 120
+    StuckMaxMinutes: 300
+  - Id: noob_4
+    DisplayName: Tom
+    AvatarId: 9
+    Personality: 0
+    AvgSecondsPerLevelMin: 820
+    AvgSecondsPerLevelMax: 1050
+    MinPlayerLevel: 20
+    MaxPlayerLevel: 30
+    TimezoneOffsetMinutes: 0
+    SleepStartLocalHour: 0
+    SleepDurationHours: 9
+    JitterPct: 0.26
+    StuckChancePerHour: 0.11
+    StuckMinMinutes: 180
+    StuckMaxMinutes: 480

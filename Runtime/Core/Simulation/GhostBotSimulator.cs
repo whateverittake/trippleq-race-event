@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 
 using System;
 
@@ -29,7 +29,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             if (bot.HasFinished) { bot.LastUpdateUtcSeconds = utcNow; return; }
 
             var last = bot.LastUpdateUtcSeconds;
-            if (last <= 0) last = utcNow;
+            if (last <= 0)
+            {
+                bot.LastUpdateUtcSeconds = utcNow; // IMPORTANT
+                return; // hoặc last = utcNow; rồi cho chạy tiếp cũng ok
+            }
 
             long delta = utcNow - last;
             if (delta <= 0) return;

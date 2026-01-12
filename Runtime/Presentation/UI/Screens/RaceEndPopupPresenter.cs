@@ -1,4 +1,5 @@
-﻿using TrippleQ.UiKit;
+﻿using System.Diagnostics;
+using TrippleQ.UiKit;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
@@ -42,31 +43,51 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             if (View == null) return;
             if (_svc == null) return;
-            // extend
-            View.SetExtendVisible(_svc.CanExtend1H());
 
-            // claim state
+            //reward +postions rank
+
             var run = _svc.CurrentRun;
             if (run == null)
             {
-                View.SetClaimState(ClaimButtonState.Hidden);
+                // không có run thì không hiện gì cả
                 return;
             }
 
-            if (run.HasClaimed)
+            SetUpData(run);
+
+            // claim state
+            View.SetClaimVisible(_svc.CanClaim());
+
+            //can check truong hop de hien thi state view
+
+            //if (run.GetPlayerRank() == 1)
+            //{
+            //    View.SetViewState(RaceEndPopupState.FirstPlace);
+            //}
+            //else
+            //{
+            //    View.SetViewState(RaceEndPopupState.NormalPlace);
+            //}
+
+            //View.SetViewState(RaceEndPopupState.CanExtend);
+        }
+
+        private void SetUpData(RaceRun run)
+        {
+            RaceReward reward = new RaceReward(0, 0, 0, 0, 0, 0);
+
+            if (run.GetPlayerRank() == 1)
             {
-                View.SetClaimState(ClaimButtonState.Claimed);
-                return;
+                reward = _svc.GetRewardForRank(1);
+            }
+            else if (_svc.CanClaim())
+            {
+                reward = _svc.GetRewardForRank(run.GetPlayerRank());
             }
 
-            if (_svc.CanClaim())
-            {
-                View.SetClaimState(ClaimButtonState.Ready);
-            }
-            else
-            {
-                View.SetClaimState(ClaimButtonState.Disabled);
-            }
+            View.SetReward(reward);
+            View.SetDataOpponent(run.Opponents);
+            View.PlayerRank = run.GetPlayerRank();
         }
 
         private void OnClaim()

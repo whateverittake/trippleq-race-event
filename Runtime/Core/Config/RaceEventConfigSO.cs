@@ -40,11 +40,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public int ExtendHours = 1;           // default 1
 
         [Header("Race Reward")]
-        public RaceReward Rank1Reward = new RaceReward { Gold = 300 };
-        public RaceReward Rank2Reward = new RaceReward { Gold = 200 };
-        public RaceReward Rank3Reward = new RaceReward { Gold = 150 };
-        public RaceReward Rank4Reward = new RaceReward { Gold = 80 };
-        public RaceReward Rank5Reward = new RaceReward { Gold = 50 };
+        public RaceReward Rank1Reward;
+        public RaceReward Rank2Reward;
+        public RaceReward Rank3Reward;
+        public RaceReward Rank4Reward;
+        public RaceReward Rank5Reward;
 
         [SerializeField]
         private RaceBotComposition _botComposition = new RaceBotComposition

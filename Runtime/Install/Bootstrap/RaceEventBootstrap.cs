@@ -62,6 +62,21 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             {
                 _svc.Debug_AdvanceBots();
             }
+
+            if (Input.GetKeyDown(KeyCode.K)) // debug
+            {
+                _svc.Debug_AdvanceBotsToEnd();
+            }
+
+            if(Input.GetKeyDown(KeyCode.J)) // debug
+            {
+                DebugWinLevel();
+            }
+
+            if(Input.GetKeyDown(KeyCode.H)) // debug
+            {
+                _svc.DebugEndEvent();
+            }
         }
 
         public void DebugWinLevel()
