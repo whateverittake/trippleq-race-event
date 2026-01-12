@@ -26,7 +26,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         int PlayerRank { get; set; }
         void SetViewState(RaceEndPopupState state);
         void SetClaimVisible(bool visible);
-
+        void SetExtendVisible(bool extendVisible);
         void SetOnClose(Action onClick);
         void SetOnClaim(Action onClick);
         void SetOnExtend(Action onClick);

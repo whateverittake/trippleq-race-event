@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using TrippleQ.UiKit;
+﻿using TrippleQ.UiKit;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
@@ -53,23 +52,50 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 return;
             }
 
+            // Setup base data (rank/opponents/reward)
             SetUpData(run);
 
-            // claim state
-            View.SetClaimVisible(_svc.CanClaim());
+            // Decide which mode this popup is in
+            bool canClaim = _svc.CanClaim();
+            bool canExtend = _svc.CanExtend1H();
+            var state = _svc.State;
 
-            //can check truong hop de hien thi state view
+            // Buttons visibility
+            View.SetClaimVisible(canClaim);
+            View.SetExtendVisible(canExtend);
 
-            //if (run.GetPlayerRank() == 1)
-            //{
-            //    View.SetViewState(RaceEndPopupState.FirstPlace);
-            //}
-            //else
-            //{
-            //    View.SetViewState(RaceEndPopupState.NormalPlace);
-            //}
+            // View state
+            if(state!= RaceEventState.Ended)
+            {
+                //race chưa end, ko hiện view này
+                return;
+            }
 
-            //View.SetViewState(RaceEndPopupState.CanExtend);
+            bool playerReachGoal = run.Player.HasFinished;
+            if (!playerReachGoal)
+            {
+                if (canExtend)
+                {
+                    //show view can extend
+                    View.SetViewState(RaceEndPopupState.CanExtend);
+                }
+                else
+                {
+                    //ko con extend, tra luon reward
+                    View.SetOnExtend(OnCloseWithoutExtend);
+                }
+               
+                return;
+            }
+
+            if(run.GetPlayerRank() == 1)
+            {
+                View.SetViewState(RaceEndPopupState.FirstPlace);
+            }
+            else
+            {
+                View.SetViewState(RaceEndPopupState.NormalPlace);
+            }
         }
 
         private void SetUpData(RaceRun run)
@@ -100,6 +126,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             _svc.Extend1H();
             Render();
+        }
+
+        private void OnCloseWithoutExtend()
+        {
+            //handle later
         }
     }
 }

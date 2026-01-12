@@ -138,6 +138,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _claimButton?.SetActive(visible);
         }
 
+        public void SetExtendVisible(bool extendVisible)
+        {
+            _extendButton?.SetActive(extendVisible);
+        }
+
         public void SetOnCloseToOpenExtendView(Action onClick)
         {
             _onCloseToOpenExtendView= onClick;
