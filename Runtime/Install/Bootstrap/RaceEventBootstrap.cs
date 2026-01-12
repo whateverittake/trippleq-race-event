@@ -70,12 +70,18 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             if(Input.GetKeyDown(KeyCode.J)) // debug
             {
-                DebugWinLevel();
+                //DebugWinLevel();
+                _svc.Debug_PlayerWinUsingFakeUtc();
             }
 
             if(Input.GetKeyDown(KeyCode.H)) // debug
             {
                 _svc.DebugEndEvent();
+            }
+
+            if (Input.GetKeyDown(KeyCode.M))
+            {
+                DebugWinLevel();
             }
         }
 

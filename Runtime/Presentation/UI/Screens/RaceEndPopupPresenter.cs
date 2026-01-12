@@ -17,6 +17,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             View.SetClose(Hide);
             View.SetOnClaim(OnClaim);
             View.SetOnExtend(OnExtend);
+            View.SetOnCloseToOpenExtendView(OpenLastChance);
+            View.SetOnCloseWithoutExtend(OnCloseWithoutExtend);
 
             _svc.OnStateChanged += OnStateChanged;
             _svc.OnRunUpdated += OnRunUpdated;
@@ -33,6 +35,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             View.SetClose(null);
             View.SetOnClaim(null);
             View.SetOnExtend(null);
+            View.SetOnCloseToOpenExtendView(null);
+            View.SetOnCloseWithoutExtend(null);
         }
 
         private void OnStateChanged(RaceEventState a, RaceEventState b) => Render();
@@ -65,12 +69,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             View.SetExtendVisible(canExtend);
 
             // View state
-            if(state!= RaceEventState.Ended)
-            {
-                //race chưa end, ko hiện view này
-                return;
-            }
-
             bool playerReachGoal = run.Player.HasFinished;
             if (!playerReachGoal)
             {
@@ -88,7 +86,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 return;
             }
 
-            if(run.GetPlayerRank() == 1)
+            if(run.FinalPlayerRank == 1)
             {
                 View.SetViewState(RaceEndPopupState.FirstPlace);
             }
@@ -102,18 +100,18 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             RaceReward reward = new RaceReward(0, 0, 0, 0, 0, 0);
 
-            if (run.GetPlayerRank() == 1)
+            if (run.FinalPlayerRank== 1)
             {
                 reward = _svc.GetRewardForRank(1);
             }
             else if (_svc.CanClaim())
             {
-                reward = _svc.GetRewardForRank(run.GetPlayerRank());
+                reward = _svc.GetRewardForRank(run.FinalPlayerRank);
             }
 
             View.SetReward(reward);
             View.SetDataOpponent(run.Opponents);
-            View.PlayerRank = run.GetPlayerRank();
+            View.PlayerRank = run.FinalPlayerRank;
         }
 
         private void OnClaim()
@@ -131,6 +129,14 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private void OnCloseWithoutExtend()
         {
             //handle later
+            //give reward
+            //close popup
+        }
+
+        private void OpenLastChance()
+        {
+            View.SetViewState(RaceEndPopupState.LastChance);
+            //render price extend
         }
     }
 }

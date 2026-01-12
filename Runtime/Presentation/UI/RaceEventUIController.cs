@@ -16,6 +16,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         [SerializeField] private RaceEntryPopupView _entryView;
         [SerializeField] private RaceEventHudWidgetView _hudWidgetView;
         [SerializeField] RaceInfoPopupView _infoPopupView;
+        [SerializeField] RaceClaimRewardPopupView _claimRewardPopupView;
 
         private RaceEventService _svc;
 
@@ -26,6 +27,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private RaceSearchingPopupPresenter _searchingPresenter;
         private RaceEndPopupPresenter _endPresenter;
         private RaceInfoPopupPresenter _infoPresenter;
+        private RaceClaimRewardPresenter _claimRewardPresenter;
 
         private void Awake()
         {
@@ -76,6 +78,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _mainPresenter = new RaceMainPopupPresenter(_svc, isInTutorial);
             _endPresenter= new RaceEndPopupPresenter(_svc);
             _infoPresenter= new RaceInfoPopupPresenter(_svc);
+            _claimRewardPresenter= new RaceClaimRewardPresenter(_svc);
 
             // --- initial bind snapshot ---
             //ReplaySnapshot();
@@ -118,6 +121,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                     break;
                 case PopupType.Info:
                     ShowInfo();
+                    break;
+                case PopupType.Claim:
+                    ShowClaimRaceRewards(); 
                     break;
                 default:
                     Debug.LogWarning("Unhandled popup type: " + req.Type);
@@ -178,6 +184,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             _infoPresenter?.Hide();
             _infoPresenter?.Unbind();
+
+            _claimRewardPresenter?.Hide();
+            _claimRewardPresenter?.Unbind();
         }
 
         private void ShowInfo()
@@ -186,6 +195,14 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             var v = (IRaceInfoPopupView)_infoPopupView;
             _infoPresenter.Bind(v);
             _infoPresenter.Show();
+        }
+
+        private void ShowClaimRaceRewards()
+        {
+            HideAll();
+            var v= (IRaceClaimRewardPopupView)_claimRewardPopupView;
+            _claimRewardPresenter.Bind(v);
+            _claimRewardPresenter.Show();
         }
 
         private void ShowEntry()

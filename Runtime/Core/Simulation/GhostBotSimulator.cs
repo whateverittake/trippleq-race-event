@@ -26,7 +26,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private static void SimulateOneBot(RaceParticipant bot, string runId, int goalLevels, long utcNow)
         {
-            if (bot.HasFinished) { bot.LastUpdateUtcSeconds = utcNow; return; }
+            if (bot.HasFinished) return;
 
             var last = bot.LastUpdateUtcSeconds;
             if (last <= 0)
@@ -91,6 +91,12 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             {
                 bot.HasFinished = true;
                 bot.FinishedUtcSeconds = utcNow;
+
+                UnityEngine.Debug.Log(
+                                        $"[RACE][BOT FINISH] botId={bot.Id} " +
+                                        $"levels={bot.LevelsCompleted}/{goalLevels} " +
+                                        $"finishUtc={utcNow}"
+                                );
             }
         }
 

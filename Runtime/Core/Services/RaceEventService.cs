@@ -52,6 +52,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         /// </summary>
         public int CurrentLevel { get; private set; }
 
+        // DEBUG ONLY: store last fakeUtc used by debug sim
+        private long _debugFakeUtcSeconds;
+
         public RaceEventService()
         {
             _sm.OnStateChanged += (from, to) =>
@@ -314,6 +317,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 {
                     _run.Player.HasFinished = true;
                     _run.Player.FinishedUtcSeconds = utcNow;
+
+                    Log(
+                            $"[RACE][PLAYER FINISH] levels={_run.Player.LevelsCompleted}/{_run.GoalLevels} finishUtc={utcNow}"
+                        );
                 }
 
                 GhostBotSimulator.SimulateBots(_run, utcNow);
@@ -703,6 +710,16 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _run.FinalizedUtcSeconds = utcNow;
 
             var standings = RaceStandings.Compute(_run.AllParticipants(), _run.GoalLevels);
+
+            for(int i=0;i < standings.Count; i++)
+            {
+                var standing = standings[i];
+                if(standing.HasFinished== false)
+                {
+                    Log("xx not finish");
+                }
+            }
+
             int rank = standings.FindIndex(p => p.Id == _run.Player.Id) + 1;
             _run.FinalPlayerRank = rank <= 0 ? standings.Count : rank;
             _run.WinnerId = standings.Count > 0 ? standings[0].Id : "";
@@ -880,26 +897,29 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             ThrowIfNotInitialized();
 
+            Log($"[DEBUG] DebugEndEvent CALLED. State={State}, HasRun={_run != null}");
+
             if (_run == null)
             {
                 Log("DebugEndEvent ignored (no active run)");
                 return;
             }
 
-            if (State != RaceEventState.InRace && State != RaceEventState.Ended)
+            if (State != RaceEventState.InRace && State != RaceEventState.Ended && State != RaceEventState.ExtendOffer)
             {
                 Log($"DebugEndEvent ignored (State={State})");
                 return;
             }
 
             var utcNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            Log($"[DEBUG] Force End. Before: EndUtc={_run.EndUtcSeconds}, utcNow={utcNow}");
 
             // Force end time to now
             _run.EndUtcSeconds = utcNow;
 
             FinalizeIfTimeUp(utcNow);
 
-            Log("DebugEndEvent executed");
+            Log($"[DEBUG] Force End DONE. After: EndUtc={_run.EndUtcSeconds}, State={State}");
 
             RequestEndedPopup();
         }
@@ -1243,6 +1263,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 int afterHash = ComputeProgressHash2(_run);
                 if (afterHash != beforeHash)
                 {
+                    _debugFakeUtcSeconds = fakeUtc;
                     _save.CurrentRun = _run;
                     TrySave();
                     PublishRunUpdated();
@@ -1353,6 +1374,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             PublishRunUpdated();
 
             var dt = DateTimeOffset.FromUnixTimeSeconds(fakeUtc).UtcDateTime;
+            _debugFakeUtcSeconds = fakeUtc;
             Log($"[DEBUG] AdvanceBotsToEnd done. steps={steps}, fakeUtc={fakeUtc} (UTC {dt:HH:mm})");
         }
 
@@ -1373,6 +1395,36 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 return h;
             }
         }
+
+        public void Debug_PlayerWinUsingFakeUtc()
+        {
+            ThrowIfNotInitialized();
+            if (_run == null) { Log("[DEBUG] PlayerWin ignored (no run)"); return; }
+            if (State != RaceEventState.InRace) { Log($"[DEBUG] PlayerWin ignored (State={State})"); return; }
+
+            // if never used fakeUtc yet, fallback to real utcNow
+            long utcNow = (_debugFakeUtcSeconds > 0) ? _debugFakeUtcSeconds
+                                                     : DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            _run.Player.LevelsCompleted += 1;
+            _run.Player.LastUpdateUtcSeconds = utcNow;
+
+            if (!_run.Player.HasFinished && _run.Player.LevelsCompleted >= _run.GoalLevels)
+            {
+                _run.Player.HasFinished = true;
+                _run.Player.FinishedUtcSeconds = utcNow;
+                UnityEngine.Debug.Log($"[RACE][PLAYER FINISH][FAKEUTC] levels={_run.Player.LevelsCompleted}/{_run.GoalLevels} finishUtc={utcNow}");
+            }
+
+            GhostBotSimulator.SimulateBots(_run, utcNow);
+
+            _save.CurrentRun = _run;
+            TrySave();
+            PublishRunUpdated();
+
+            FinalizeIfTimeUp(utcNow);
+        }
+
     }
 
     public readonly struct RaceHudStatus

@@ -1,5 +1,6 @@
 ﻿#nullable enable
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -16,14 +17,15 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         public static List<RaceParticipant> Compute(IEnumerable<RaceParticipant> participants, int goalLevels)
         {
+
             return participants
-                .OrderByDescending(p => p.LevelsCompleted)
-                .ThenBy(p =>
-                {
-                    var finished = (p.LevelsCompleted >= goalLevels) && p.HasFinished;
-                    return finished ? p.FinishedUtcSeconds : p.LastUpdateUtcSeconds;
-                })
-                .ToList();
+                 .OrderByDescending(p => Math.Min(p.LevelsCompleted, goalLevels))
+                 .ThenBy(p =>
+                 {
+                     var finished = (p.LevelsCompleted >= goalLevels) && p.HasFinished;
+                     return finished ? p.FinishedUtcSeconds : p.LastUpdateUtcSeconds;
+                 })
+                 .ToList();
         }
     }
 }
