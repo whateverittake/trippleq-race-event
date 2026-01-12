@@ -7,7 +7,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 {
     public class RaceInfoPopupView : MonoBehaviour, IRaceInfoPopupView
     {
-        const string _prefix= "Time remaining: ";
+        const string _prefix= "Event time left: ";
 
         [SerializeField] TMP_Text _timeText;
 
