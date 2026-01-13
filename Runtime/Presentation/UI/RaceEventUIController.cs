@@ -1,5 +1,4 @@
-﻿using TrippleQ.UiKit;
-using UnityEngine;
+﻿using UnityEngine;
 using static TrippleQ.Event.RaceEvent.Runtime.PopupTypes;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
@@ -55,6 +54,22 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             _mainPresenter?.Tick(Time.deltaTime);
             _infoPresenter?.Tick(Time.deltaTime);
+        }
+
+        public void InitBootstrap(RaceEventBootstrap bootstrap)
+        {
+            _bootstrap = bootstrap;
+
+            // nếu bootstrap Awake chạy trước thì Service đã có sẵn
+            if (_bootstrap != null && _bootstrap.Service != null)
+            {
+                Bind(_bootstrap.Service);
+                return;
+            }
+
+            // fallback: chờ signal ready
+            if (_bootstrap != null) _bootstrap.OnServiceReady += Bind;
+            else Debug.LogError("Missing bootstrap ref");
         }
 
         private void Bind(RaceEventService svc)
