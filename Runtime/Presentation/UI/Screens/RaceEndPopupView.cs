@@ -150,7 +150,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                         .OrderBy(p => p.FinishedUtcSeconds)
                         .ToList();
             int playerRank = 0;
-            for (int i = 0; playerRank < rankList.Count; i++)
+            for (int i = 0; i < rankList.Count; i++)
             {
                 var part = rankList[i];
                 if (part != null)
