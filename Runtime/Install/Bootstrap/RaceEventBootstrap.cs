@@ -13,6 +13,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public RaceEventService Service => _svc;
         public event Action<RaceEventService> OnServiceReady;
 
+        private JsonRaceStorage _pendingStorage;
+        private List<RaceEventConfig> _pendingConfigs;
+        private BotPoolJson _pendingPool;
+
         private void Awake()
         {
             var kv = new FileKeyValueStorage("TrippleQ.RaceEvent.Save");
@@ -31,14 +35,23 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             StartCoroutine(JsonBotPoolLoader.LoadOrFallbackAsync(pool =>
             {
-                _svc.Initialize(configs: runtimeConfigs,
-                                storage: storage,
-                                initialLevel: 10,
-                                isInTutorial: false,
-                                pool);
+                _pendingStorage = storage;
+                _pendingConfigs = runtimeConfigs;
+                _pendingPool = pool;
 
                 OnServiceReady?.Invoke(_svc);
             }));
+        }
+
+        public void Initialize(int playerLevel, bool isInTutorial)
+        {
+            _svc.Initialize(
+                configs: _pendingConfigs,
+                storage: _pendingStorage,
+                initialLevel: playerLevel,
+                isInTutorial: isInTutorial,
+                botPool: _pendingPool
+            );
         }
 
         private void Update()
@@ -97,6 +110,18 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private void OnDestroy()
         {
             _svc.Dispose();
+        }
+
+        public void NotifyLevelWin(int newLevel, bool isInTutorial, DateTime localNow)
+        {
+            if (_svc == null) return;              // hoặc throw nếu bạn muốn strict
+            if (!_svc.IsInitialized) return;       // nếu service bạn có cờ init thì check
+
+            _svc.OnLevelWin(
+                newLevel: newLevel,
+                isInTutorial: isInTutorial,
+                localNow: localNow
+            );
         }
     }
 }
