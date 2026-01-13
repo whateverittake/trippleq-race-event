@@ -35,7 +35,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         void SetOnCloseWithoutExtend(Action onClick);
 
-        void SetReward(RaceReward reward);
-        void SetDataOpponent(List<RaceParticipant> opponents);
+        void SetDataLeaderBoard(List<RaceParticipant> allRacer);
+        void RenderLeaderBoard();
+        void RenderUserReward();
+        void OpenChestAnim();
     }
 }

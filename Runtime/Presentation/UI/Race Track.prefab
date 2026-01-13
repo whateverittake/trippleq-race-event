@@ -1383,6 +1383,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _avatarItemView: {fileID: 5635425091523733278}
+  _baloon: {fileID: 8482198007908831338}
   _scoreObj: {fileID: 8193458031854594982}
   _scoreText: {fileID: 6031168956588270564}
   _nameText: {fileID: 8241731738946099021}

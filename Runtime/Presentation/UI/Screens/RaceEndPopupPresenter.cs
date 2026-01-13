@@ -1,10 +1,15 @@
-﻿using TrippleQ.UiKit;
+﻿using NUnit.Framework;
+using System.Collections.Generic;
+using System.Linq;
+using TrippleQ.UiKit;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
     public sealed class RaceEndPopupPresenter : BasePopupPresenter<IRaceEndPopupView>
     {
         private readonly RaceEventService _svc;
+
+        private RaceReward _currentReward;
 
         public RaceEndPopupPresenter(RaceEventService svc)
         {
@@ -109,15 +114,24 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 reward = _svc.GetRewardForRank(run.FinalPlayerRank);
             }
 
-            View.SetReward(reward);
-            View.SetDataOpponent(run.Opponents);
+            _currentReward=reward;
+
+            List<RaceParticipant> newList = run.Opponents.ToList();
+            newList.Add(run.Player);
+            View.SetDataLeaderBoard(newList);
             View.PlayerRank = run.FinalPlayerRank;
+            View.RenderLeaderBoard();
+            View.RenderUserReward();
         }
 
         private void OnClaim()
         {
             _svc.Claim();
+            View.OpenChestAnim();
+            // _currentReward => anim?
+            //add reward
             Render(); // service có thể bắn event, nhưng render ngay cho chắc
+            Hide();
         }
 
         private void OnExtend()

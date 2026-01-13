@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 7077948338783149678}
   - component: {fileID: 1373107998997355973}
   m_Layer: 5
-  m_Name: Image
+  m_Name: 'Deco '
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -222,6 +222,7 @@ GameObject:
   - component: {fileID: 4751343619938882843}
   - component: {fileID: 483110757847379628}
   - component: {fileID: 2666546705713392039}
+  - component: {fileID: 6368359236953020277}
   m_Layer: 5
   m_Name: 1st rank reward claim
   m_TagString: Untagged
@@ -289,6 +290,20 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &6368359236953020277
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6591468093599215216}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4006836c8dfea274d90142a2b654d605, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _avatar: {fileID: 4084111501858502670}
+  _nameText: {fileID: 4738507370888998177}
 --- !u!1001 &5931609045199308058
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -386,6 +401,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c533db51d7c5b1f4ebba23f2dbd998e1, type: 3}
+--- !u!114 &4084111501858502670 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7709286501989072148, guid: c533db51d7c5b1f4ebba23f2dbd998e1, type: 3}
+  m_PrefabInstance: {fileID: 5931609045199308058}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20184f2b67bb6fd4ca2d35f87755d7aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!224 &5988402107819761737 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 92989009199195475, guid: c533db51d7c5b1f4ebba23f2dbd998e1, type: 3}

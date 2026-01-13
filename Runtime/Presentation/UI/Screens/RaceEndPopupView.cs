@@ -1,14 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using TMPro;
+using TrippleQ.AvatarSystem;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
     public class RaceEndPopupView : MonoBehaviour, IRaceEndPopupView
     {
+        const string PrefixAvatar = "avatar";
+        const string PrefixDesFirstRank = "You defeated 4 opponents";
+        const string PrefixDesOtherRank = "You finishd {0}.Revenge awaits next race";
+
         [SerializeField] GameObject _claimButton, _extendButton;
-        [SerializeField] GameObject _firstRankView, _normalRankView, _extendOfferView;
+        [SerializeField] GameObject _rankView, _extendOfferView;
         [SerializeField] GameObject _lastChanceView;
+
+        [SerializeField] Sprite _titleChampion, _titleFininsh;
+        [SerializeField] Image _titleImage;
+
+        [SerializeField] TMP_Text _desText;
+        [SerializeField] Sprite[] _chestIconClose;
+        [SerializeField] Sprite[] _chestIconOpen;
+        [SerializeField] Image _chestImage;
+
+        [SerializeField] RankClaimRewardUI[] _leaderBoardRanks;
 
         private Action _onClose;
         private Action _onClaim;
@@ -16,8 +34,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private Action _onCloseToOpenExtendView;
         private Action _onCloseWithoutExtend;
 
-        private RaceReward _reward;
-        private List<RaceParticipant> _opponents;
+        private RaceParticipant _player;
+        private List<RaceParticipant> _racer;
         private int _playerRank = 1;
 
         // ===== Button hooks (gán từ UI Button OnClick) =====
@@ -85,32 +103,124 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void Show() => gameObject.SetActive(true);
         public void Hide() => gameObject.SetActive(false);
 
-        public void SetTitle(string title) { }
-        public void SetMessage(string message) { }
+        public void SetTitle(string title) 
+        {
+
+        }
+        public void SetMessage(string message) 
+        {
+            _desText.text = message;
+        }
         public void SetPrimary(string label, Action onClick) { }
         public void SetSecondary(string label, Action onClick) { }
         public void SetClose(Action onClick) => _onClose = onClick;
 
-        public void SetReward(RaceReward raceReward)
+        public void SetDataLeaderBoard(List<RaceParticipant> racers)
         {
-            _reward = raceReward;
+            _racer = racers;
         }
 
-        public void SetDataOpponent(List<RaceParticipant> opponents)
+        public void RenderLeaderBoard()
         {
-            _opponents= opponents;
+            if (_leaderBoardRanks == null || _leaderBoardRanks.Length == 0)
+                return;
+
+            // clear all slots first
+            for (int i = 0; i < _leaderBoardRanks.Length; i++)
+                _leaderBoardRanks[i].RenderData(null, string.Empty);
+
+            if (_racer == null || _racer.Count == 0)
+                return;
+
+            var finishedList = _racer
+                            .Where(p => p.HasFinished)
+                            .OrderBy(p => p.FinishedUtcSeconds)
+                            .Take(_leaderBoardRanks.Length)
+                            .ToList();
+
+            for (int i = 0; i < finishedList.Count && i < _leaderBoardRanks.Length; i++)
+            {
+                var part = finishedList[i];
+                _leaderBoardRanks[i].RenderData(AvatarIconResolver.Get(PrefixAvatar + part.AvatarId), part?.DisplayName ?? string.Empty);
+            }
+
+            string suff = string.Empty;
+            var rankList = _racer
+                        .Where(p => p.HasFinished)
+                        .OrderBy(p => p.FinishedUtcSeconds)
+                        .ToList();
+            int playerRank = 0;
+            for (int i = 0; playerRank < rankList.Count; i++)
+            {
+                var part = rankList[i];
+                if (part != null)
+                {
+                    if (part == _player)
+                    {
+                        playerRank = i + 1;
+                    }
+                }
+            }
+
+            switch (playerRank)
+            {
+                case 1:
+                    _desText.text = PrefixDesFirstRank;
+                    break;
+                case 2:
+                    _desText.text = string.Format(PrefixDesOtherRank, "2nd");
+                    break;
+                case 3:
+                    _desText.text = string.Format(PrefixDesFirstRank, "3rd");
+                    break;
+                case 4:
+                    _desText.text = string.Format(PrefixDesOtherRank, "4th"); 
+                    break;
+                case 5:
+                    _desText.text = string.Format(PrefixDesOtherRank, "5th");
+                    break;
+                default:
+                    Debug.LogError("bugggg");
+                    break;
+            }
+        }
+
+        public void RenderUserReward()
+        {
+            switch (_playerRank)
+            {
+                case 1:
+                    //1st
+                    _chestImage.sprite = _chestIconClose[0];
+                    break;
+                case 2:
+                    //2nd
+                    _chestImage.sprite = _chestIconClose[1];
+                    break;
+                case 3:
+                    _chestImage.sprite = _chestIconClose[2];
+                    break;
+                default:
+                    _chestImage.sprite = _chestIconClose[3];
+                    break;
+
+            }
         }
 
         private void Render1stReward()
         {
             HideAll();
-            _firstRankView?.SetActive(true);
+            _rankView?.SetActive(true);
+            _titleImage.sprite = _titleChampion;
+            _titleImage.SetNativeSize();
         }
 
         private void RenderNormalReward()
         {
             HideAll();
-            _normalRankView?.SetActive(true);
+            _rankView?.SetActive(true);
+            _titleImage.sprite = _titleFininsh;
+            _titleImage.SetNativeSize();
         }
 
         private void RenderCanExtendOffer()
@@ -127,8 +237,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void HideAll()
         {
-            _firstRankView?.SetActive(false);
-            _normalRankView?.SetActive(false);
+            _rankView?.SetActive(false);
             _extendOfferView?.SetActive(false);
             _lastChanceView?.SetActive(false);
         }
@@ -151,6 +260,21 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void SetOnCloseWithoutExtend(Action onClick)
         {
             _onCloseWithoutExtend = onClick;
+        }
+
+        public void OpenChestAnim()
+        {
+            int index = 0;
+            for (int i = 0; i < _chestIconClose.Count(); i++) 
+            {
+                if(_chestIconClose[i]== _chestImage.sprite)
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            _chestImage.sprite = _chestIconOpen[index];
         }
     }
 }

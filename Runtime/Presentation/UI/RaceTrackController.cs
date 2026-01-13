@@ -12,9 +12,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         const string PrefixAvatar= "avatar";
 
         [SerializeField] AvatarItemView _avatarItemView;
+        [SerializeField] GameObject _baloon;
         [SerializeField] GameObject _scoreObj;
         [SerializeField] TMP_Text _scoreText,_nameText;
-        [SerializeField] GameObject _scoreBg, _leadScoreBg;
+        [SerializeField] GameObject _scoreBg, _leadScoreBg, _leadRaceTrackBg;
         [SerializeField] GameObject _userBgName, _otherBgName;
         [SerializeField] GameObject[] _stepMoves; //max 10 step for now
         [SerializeField] GameObject _defaultStartStep;
@@ -43,6 +44,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _scoreObj.SetActive(false);
             _scoreBg.SetActive(false);
             _leadScoreBg.SetActive(false);
+            _leadRaceTrackBg.SetActive(false);
             UpdatePosAvatar(0);
         }
 
@@ -54,11 +56,13 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             if (isLeader)
             {
                 _leadScoreBg.SetActive(true);
+                _leadRaceTrackBg.SetActive(true) ;
                 _scoreBg.SetActive(false);
             }
             else
             {
                 _leadScoreBg.SetActive(false);
+                _leadRaceTrackBg.SetActive(false);
                 _scoreBg.SetActive(true);
             }
         }
@@ -116,7 +120,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void UpdatePosAvatar(int levelsCompleted)
         {
-            if (_avatarItemView == null)
+            if (_baloon == null)
                 return;
 
             if (_listStepUse == null || _listStepUse.Count == 0)
@@ -126,8 +130,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             {
                 if (_defaultStartStep != null)
                 {
-                    _avatarItemView.transform.SetParent(_defaultStartStep.transform, false);
-                    _avatarItemView.transform.localPosition = Vector3.zero;
+                    _baloon.transform.SetParent(_defaultStartStep.transform, false);
+                    _baloon.transform.localPosition = Vector3.zero;
+                    _baloon.gameObject.SetActive(false);
                 }
             }
             else
@@ -136,8 +141,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 var stepObj = _listStepUse[stepIdx];
                 if (stepObj != null)
                 {
-                    _avatarItemView.transform.SetParent(stepObj.transform, false);
-                    _avatarItemView.transform.localPosition = Vector3.zero;
+                    _baloon.gameObject.SetActive(true);
+                    _baloon.transform.SetParent(stepObj.transform, false);
+                    _baloon.transform.localPosition = Vector3.zero;
                 }
             }
         }
