@@ -61,6 +61,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 return;
             }
 
+            //// đảm bảo đúng assumption: chỉ hiện khi finalized
+            //if (!run.IsFinalized) return;
+
             // Setup base data (rank/opponents/reward)
             SetUpData(run);
 
@@ -79,15 +82,14 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             {
                 if (canExtend)
                 {
-                    //show view can extend
                     View.SetViewState(RaceEndPopupState.CanExtend);
                 }
                 else
                 {
-                    //ko con extend, tra luon reward
-                    View.SetOnExtend(OnCloseWithoutExtend);
+                    View.SetViewState(RaceEndPopupState.NoClaim);
+                    View.SetClaimVisible(true);
+                    View.SetExtendVisible(false);
                 }
-               
                 return;
             }
 
@@ -103,23 +105,22 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void SetUpData(RaceRun run)
         {
+            // 1) leaderboard snapshot (source of truth)
+            var snap = _svc.GetLeaderboardSnapshot(5); // hoặc _leaderBoardRanks.Length nếu view expose
+
+            // 2) reward: chỉ dựa vào rank khi canClaim hoặc rank1 special
             RaceReward reward = new RaceReward(0, 0, 0, 0, 0, 0);
 
-            if (run.FinalPlayerRank== 1)
-            {
-                reward = _svc.GetRewardForRank(1);
-            }
-            else if (_svc.CanClaim())
-            {
-                reward = _svc.GetRewardForRank(run.FinalPlayerRank);
-            }
+            bool canClaim = _svc.CanClaim();
 
-            _currentReward=reward;
+            int rank = run.FinalPlayerRank;
+            if (_svc.CanClaim())
+                reward = _svc.GetRewardForRank(rank);
 
-            List<RaceParticipant> newList = run.Opponents.ToList();
-            newList.Add(run.Player);
-            View.SetDataLeaderBoard(newList);
-            View.PlayerRank = run.FinalPlayerRank;
+            _currentReward = reward;
+
+            // 3) push data to view (NO sorting in view)
+            View.SetDataLeaderBoard(snap.Top, snap.PlayerRank);
             View.RenderLeaderBoard();
             View.RenderUserReward();
         }

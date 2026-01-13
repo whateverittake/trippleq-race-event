@@ -11,8 +11,21 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     public class RaceEndPopupView : MonoBehaviour, IRaceEndPopupView
     {
         const string PrefixAvatar = "avatar";
-        const string PrefixDesFirstRank = "You defeated 4 opponents";
-        const string PrefixDesOtherRank = "You finishd {0}.Revenge awaits next race";
+
+        private static readonly string[] FirstPlaceLines =
+        {
+            "You beat all 4 opponents!",
+            "Champion! You crushed the competition!",
+            "Victory! You dominated the race!",
+            "Unstoppable! You beat all rivals!"
+        };
+
+        private static readonly string[] OtherRankLines =
+        {
+            "You finished {0}. Try again next race!",
+            "You finished {0}. Ready for a comeback?",
+            "You finished {0}. Better luck next time!"
+        };
 
         [SerializeField] GameObject _claimButton, _extendButton;
         [SerializeField] GameObject _rankView, _extendOfferView;
@@ -34,8 +47,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private Action _onCloseToOpenExtendView;
         private Action _onCloseWithoutExtend;
 
-        private RaceParticipant _player;
-        private List<RaceParticipant> _racer;
+        private IReadOnlyList<RaceParticipant> _racer;
         private int _playerRank = 1;
 
         // ===== Button hooks (gán từ UI Button OnClick) =====
@@ -88,18 +100,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         // ===== ITrippleQPopupView tối thiểu =====
         public bool IsVisible => gameObject.activeSelf;
 
-        public int PlayerRank
-        {
-                get 
-                { 
-                    return _playerRank; 
-                }
-                set
-                {
-                    _playerRank = value;
-                }
-        } 
-
         public void Show() => gameObject.SetActive(true);
         public void Hide() => gameObject.SetActive(false);
 
@@ -115,9 +115,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void SetSecondary(string label, Action onClick) { }
         public void SetClose(Action onClick) => _onClose = onClick;
 
-        public void SetDataLeaderBoard(List<RaceParticipant> racers)
+        public void SetDataLeaderBoard(IReadOnlyList<RaceParticipant> racers, int playerRank)
         {
             _racer = racers;
+            _playerRank = playerRank;
         }
 
         public void RenderLeaderBoard()
@@ -132,57 +133,37 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             if (_racer == null || _racer.Count == 0)
                 return;
 
-            var finishedList = _racer
-                            .Where(p => p.HasFinished)
-                            .OrderBy(p => p.FinishedUtcSeconds)
-                            .Take(_leaderBoardRanks.Length)
-                            .ToList();
-
-            for (int i = 0; i < finishedList.Count && i < _leaderBoardRanks.Length; i++)
+            int count = Mathf.Min(_racer.Count, _leaderBoardRanks.Length);
+            for (int i = 0; i < count; i++)
             {
-                var part = finishedList[i];
-                _leaderBoardRanks[i].RenderData(AvatarIconResolver.Get(PrefixAvatar + part.AvatarId), part?.DisplayName ?? string.Empty);
+                var part = _racer[i];
+                _leaderBoardRanks[i].RenderData(
+                    AvatarIconResolver.Get(PrefixAvatar + part.AvatarId),
+                    part?.DisplayName ?? string.Empty
+                );
             }
 
-            string suff = string.Empty;
-            var rankList = _racer
-                        .Where(p => p.HasFinished)
-                        .OrderBy(p => p.FinishedUtcSeconds)
-                        .ToList();
-            int playerRank = 0;
-            for (int i = 0; i < rankList.Count; i++)
-            {
-                var part = rankList[i];
-                if (part != null)
-                {
-                    if (part == _player)
-                    {
-                        playerRank = i + 1;
-                    }
-                }
-            }
+            // description dựa trên _playerRank (đã từ service)
+            _desText.text = (_playerRank == 1)
+                ? GetFirstPlaceLine()
+                : GetOtherRankLine(_playerRank);
+        }
 
-            switch (playerRank)
-            {
-                case 1:
-                    _desText.text = PrefixDesFirstRank;
-                    break;
-                case 2:
-                    _desText.text = string.Format(PrefixDesOtherRank, "2nd");
-                    break;
-                case 3:
-                    _desText.text = string.Format(PrefixDesFirstRank, "3rd");
-                    break;
-                case 4:
-                    _desText.text = string.Format(PrefixDesOtherRank, "4th"); 
-                    break;
-                case 5:
-                    _desText.text = string.Format(PrefixDesOtherRank, "5th");
-                    break;
-                default:
-                    Debug.LogError("bugggg");
-                    break;
-            }
+        public string GetFirstPlaceLine()
+        {
+            return FirstPlaceLines[UnityEngine.Random.Range(0, FirstPlaceLines.Length)];
+        }
+
+        public string GetOtherRankLine(int rank)
+        {
+            var line = OtherRankLines[UnityEngine.Random.Range(0, OtherRankLines.Length)];
+            return string.Format(line, ToOrdinal(rank));
+        }
+
+        private static string ToOrdinal(int n)
+        {
+            if (n % 100 is 11 or 12 or 13) return $"{n}th";
+            return (n % 10) switch { 1 => $"{n}st", 2 => $"{n}nd", 3 => $"{n}rd", _ => $"{n}th" };
         }
 
         public void RenderUserReward()

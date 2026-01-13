@@ -554,7 +554,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             {
                 Id = "player",
                 DisplayName = "You",
-                AvatarId = 0,
+                AvatarId = ExtractNumberSuffix(AvatarSystem.AvatarServiceLocator.Service.GetSelectedAvatarId().value.Value),
                 LevelsCompleted = 0,
                 LastUpdateUtcSeconds = utcNow,
                 IsBot = false
@@ -1425,6 +1425,53 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             FinalizeIfTimeUp(utcNow);
         }
 
+
+        public LeaderboardSnapshot GetLeaderboardSnapshot(int topN)
+        {
+            ThrowIfNotInitialized();
+            if (_run == null) return LeaderboardSnapshot.Empty();
+
+            // 1) lấy standings theo cùng 1 rule duy nhất
+            // nếu RaceStandings.Compute đã sort đúng theo rule finishUtc / progress thì dùng lại luôn
+            var standings = RaceStandings.Compute(_run.AllParticipants(), _run.GoalLevels);
+
+            // 2) lấy rank player
+            int playerRank = standings.FindIndex(p => p.Id == _run.Player.Id) + 1;
+            if (playerRank <= 0) playerRank = standings.Count;
+
+            // 3) topN
+            var top = standings.Count <= topN ? standings : standings.GetRange(0, topN);
+
+            return new LeaderboardSnapshot(top, playerRank, _run.Player.HasFinished);
+        }
+
+        public string ExtractNumberSuffix(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return string.Empty;
+
+            int i = input.Length - 1;
+            while (i >= 0 && char.IsDigit(input[i]))
+                i--;
+
+            return input.Substring(i + 1);
+        }
+    }
+
+    public readonly struct LeaderboardSnapshot
+    {
+        public readonly IReadOnlyList<RaceParticipant> Top;
+        public readonly int PlayerRank;      // 1-based
+        public readonly bool PlayerFinished;
+
+        public LeaderboardSnapshot(IReadOnlyList<RaceParticipant> top, int playerRank, bool playerFinished)
+        {
+            Top = top;
+            PlayerRank = playerRank;
+            PlayerFinished = playerFinished;
+        }
+
+        public static LeaderboardSnapshot Empty() => new LeaderboardSnapshot(Array.Empty<RaceParticipant>(), 0, false);
     }
 
     public readonly struct RaceHudStatus

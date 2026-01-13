@@ -7,6 +7,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     public class RaceEventBootstrap : MonoBehaviour
     {
         [SerializeField] List<RaceEventConfigSO> _configSOs;
+        [SerializeField] bool _isInDev=false;
 
         private RaceEventService _svc;
 
@@ -33,14 +34,30 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 runtimeConfigs.Add(so.ToConfig()); // snapshot
             }
 
-            StartCoroutine(JsonBotPoolLoader.LoadOrFallbackAsync(pool =>
+            if (_isInDev)
             {
-                _pendingStorage = storage;
-                _pendingConfigs = runtimeConfigs;
-                _pendingPool = pool;
+                StartCoroutine(JsonBotPoolLoader.LoadOrFallbackAsync(pool =>
+                {
+                    _svc.Initialize(configs: runtimeConfigs,
+                                    storage: storage,
+                                    initialLevel: 10,
+                                    isInTutorial: false,
+                                    pool);
 
-                OnServiceReady?.Invoke(_svc);
-            }));
+                    OnServiceReady?.Invoke(_svc);
+                }));
+            }
+            else
+            {
+                StartCoroutine(JsonBotPoolLoader.LoadOrFallbackAsync(pool =>
+                {
+                    _pendingStorage = storage;
+                    _pendingConfigs = runtimeConfigs;
+                    _pendingPool = pool;
+
+                    OnServiceReady?.Invoke(_svc);
+                }));
+            }
         }
 
         public void Initialize(int playerLevel, bool isInTutorial)

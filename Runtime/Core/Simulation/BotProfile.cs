@@ -8,7 +8,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     {
         public string Id = "";
         public string DisplayName = "";
-        public int AvatarId;
+        public string AvatarId;
         public BotPersonality Personality;
 
         public float AvgSecondsPerLevelMin = 450;

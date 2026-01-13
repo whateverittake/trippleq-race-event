@@ -8,7 +8,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     {
         public string Id = "";
         public string DisplayName = "";
-        public int AvatarId;
+        public string AvatarId="";
 
         // Progress metric (MVP): levels completed during this run
         public int LevelsCompleted;

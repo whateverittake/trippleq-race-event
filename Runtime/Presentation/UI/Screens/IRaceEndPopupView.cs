@@ -23,7 +23,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
     public interface IRaceEndPopupView : ITrippleQPopupView
     {
-        int PlayerRank { get; set; }
         void SetViewState(RaceEndPopupState state);
         void SetClaimVisible(bool visible);
         void SetExtendVisible(bool extendVisible);
@@ -35,7 +34,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         void SetOnCloseWithoutExtend(Action onClick);
 
-        void SetDataLeaderBoard(List<RaceParticipant> allRacer);
+        void SetDataLeaderBoard(IReadOnlyList<RaceParticipant> allRacer, int playerRank);
         void RenderLeaderBoard();
         void RenderUserReward();
         void OpenChestAnim();

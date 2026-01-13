@@ -395,6 +395,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2750993660479612623, guid: 66ef919ba13c69246ad9872642aa10a0, type: 3}
+      propertyPath: _isInDev
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4057813817860948752, guid: 66ef919ba13c69246ad9872642aa10a0, type: 3}
       propertyPath: m_Name
       value: RaceEventBootstrap
@@ -563,7 +567,7 @@ PrefabInstance:
     - target: {fileID: 7485327728862074739, guid: cb9b16aa139a1bb4c91244e0a89feee6, type: 3}
       propertyPath: _claimRewardPopupView
       value: 
-      objectReference: {fileID: 4109527662351461725}
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2248,17 +2252,6 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 4905729143144773870, guid: bd88b2af036084043af6927531b7a33d, type: 3}
   m_PrefabInstance: {fileID: 4109527662351461723}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &4109527662351461725 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1690591091591600661, guid: bd88b2af036084043af6927531b7a33d, type: 3}
-  m_PrefabInstance: {fileID: 4109527662351461723}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9785b5dc274346749a5efe39c5b1f40d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &5531671165754037181 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 7959629725916638474, guid: bd88b2af036084043af6927531b7a33d, type: 3}
