@@ -7,16 +7,13 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 {
     public sealed class RaceEndPopupPresenter : BasePopupPresenter<IRaceEndPopupView>
     {
-        private readonly IRaceRewardHandler _rewardHandler;
-
         private readonly RaceEventService _svc;
 
         private RaceReward _currentReward;
 
-        public RaceEndPopupPresenter(RaceEventService svc, IRaceRewardHandler rewardHandler)
+        public RaceEndPopupPresenter(RaceEventService svc)
         {
             _svc = svc;
-            _rewardHandler = rewardHandler;
         }
 
         protected override void OnBind()
@@ -134,7 +131,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             View.OpenChestAnim();
 
             // _currentReward => anim?
-            _rewardHandler?.PlayClaimAnimation(View, _currentReward);
 
             //add reward
             //sample only in bootstrap
