@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Analytics;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
@@ -17,6 +18,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private JsonRaceStorage _pendingStorage;
         private List<RaceEventConfig> _pendingConfigs;
         private BotPoolJson _pendingPool;
+
+        private Action<RaceReward>? _boundRewardHandler;
 
         private void Awake()
         {
@@ -69,6 +72,16 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 isInTutorial: isInTutorial,
                 botPool: _pendingPool
             );
+        }
+
+        public void OnClaimRewardRace(Action<RaceReward> claimAction)
+        {
+            // chống bind nhiều lần
+            if (_boundRewardHandler != null)
+                _svc.OnRewardGranted -= _boundRewardHandler;
+
+            _boundRewardHandler = reward => claimAction?.Invoke(reward);
+            _svc.OnRewardGranted += _boundRewardHandler;
         }
 
         private void Update()
