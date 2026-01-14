@@ -47,3 +47,4 @@ MonoBehaviour:
   _configSOs:
   - {fileID: 11400000, guid: 3cb28f85bcaa8764bb9e219e30a3844c, type: 2}
   - {fileID: 11400000, guid: 3cb28f85bcaa8764bb9e219e30a3844c, type: 2}
+  _isInDev: 1

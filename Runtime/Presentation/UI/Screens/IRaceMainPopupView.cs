@@ -17,5 +17,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         void UpdateData(RaceRun currentRun);
         void InitDataReward(RaceReward firstRankReward, RaceReward secondRankReward, RaceReward thirdRankReward);
+
+        void SetGoal(int goal);
     }
 }

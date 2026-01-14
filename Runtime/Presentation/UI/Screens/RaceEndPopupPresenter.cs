@@ -7,13 +7,16 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 {
     public sealed class RaceEndPopupPresenter : BasePopupPresenter<IRaceEndPopupView>
     {
+        private readonly IRaceRewardHandler _rewardHandler;
+
         private readonly RaceEventService _svc;
 
         private RaceReward _currentReward;
 
-        public RaceEndPopupPresenter(RaceEventService svc)
+        public RaceEndPopupPresenter(RaceEventService svc, IRaceRewardHandler rewardHandler)
         {
             _svc = svc;
+            _rewardHandler = rewardHandler;
         }
 
         protected override void OnBind()
@@ -129,8 +132,27 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             _svc.Claim();
             View.OpenChestAnim();
+
             // _currentReward => anim?
+            _rewardHandler?.PlayClaimAnimation(View, _currentReward);
+
             //add reward
+            //sample only in bootstrap
+            //_svc.OnRewardGranted += reward =>
+            //{
+            //    // 1) Economy
+            //    economy.AddGold(reward.Gold);
+            //    economy.AddGems(reward.Gems);
+
+            //    // 2) Save (nếu economy không tự save)
+            //    save.Commit();
+
+            //    // 3) Analytics
+            //    analytics.LogRaceReward(reward);
+
+            //    // 4) UI/Anim (nếu muốn)
+            //    // ui.ShowRewardFly(reward);
+            //};
             Render(); // service có thể bắn event, nhưng render ngay cho chắc
             Hide();
         }

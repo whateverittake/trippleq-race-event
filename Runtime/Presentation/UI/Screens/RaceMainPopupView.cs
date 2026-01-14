@@ -10,7 +10,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 {
     public class RaceMainPopupView : MonoBehaviour, IRaceMainPopupView
     {
-        [SerializeField] TMP_Text _timeText;
+        const string DES_PREFIX = "The first 3 players to clear {0} levels win big rewards!";
+        [SerializeField] TMP_Text _timeText, _desText;
         [SerializeField] RaceTrackController _userTrack;
         [SerializeField] RaceTrackController[] _opponentTracks;
         [SerializeField] ChestTooltipHook[] _chestTooltipHooks;
@@ -43,6 +44,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void SetTimeStatus(string text)
         {
             _timeText.text = text;
+        }
+
+        public void SetGoal(int goalCount)
+        {
+            _desText.text= string.Format(DES_PREFIX, goalCount);
         }
 
         public void InitData(RaceRun currentRun)

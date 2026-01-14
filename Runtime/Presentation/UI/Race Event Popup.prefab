@@ -7682,6 +7682,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _timeText: {fileID: 8585440524784956777}
+  _desText: {fileID: 3284349397946136415}
   _userTrack: {fileID: 4837782483618795118}
   _opponentTracks:
   - {fileID: 7413749113709737755}

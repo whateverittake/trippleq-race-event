@@ -23,6 +23,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             View.SetOnClose(Hide);
             // optional: wire close X nếu view có
             View.SetClose(Hide);
+            if(_svc.HasRun) View.SetGoal(_svc.CurrentRun.GoalLevels);
         }
 
         override protected void OnUnbind()
@@ -31,6 +32,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             View.SetOnClose(null);
             View.SetClose(null);
             View.SetOnInfoClick(null);
+            View.SetGoal(0);
         }
 
         protected override void OnAfterShow()
