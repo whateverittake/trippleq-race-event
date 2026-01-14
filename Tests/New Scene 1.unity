@@ -395,6 +395,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2750993660479612623, guid: 66ef919ba13c69246ad9872642aa10a0, type: 3}
+      propertyPath: _configSOs.Array.size
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4057813817860948752, guid: 66ef919ba13c69246ad9872642aa10a0, type: 3}
       propertyPath: m_Name
       value: RaceEventBootstrap

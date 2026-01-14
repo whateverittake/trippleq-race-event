@@ -42,14 +42,17 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         [SerializeField] RankClaimRewardUI[] _leaderBoardRanks;
 
+        [Space]
         [SerializeField] AvatarItemView _lastChanceAvatar;
-        [SerializeField] TMP_Text _desLastChance;
+        [SerializeField] TMP_Text _desLastChance, _paidCoinText;
+        [SerializeField] GameObject _adsBtn,_paidCoinBtn;
 
         private Action _onClose;
         private Action _onClaim;
         private Action _onExtend;
         private Action _onCloseToOpenExtendView;
         private Action _onCloseWithoutExtend;
+        private Action _onWatchAds;
 
         private IReadOnlyList<RaceParticipant> _racer;
         private int _playerRank = 1;
@@ -68,6 +71,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         }
 
         public void OnExtendRaceClick() => _onExtend?.Invoke();
+
+        public void OnWatchAdsClick()=> _onWatchAds?.Invoke();
 
         // ===== IRaceEndPopupView =====
 
@@ -100,6 +105,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void SetOnClose(Action onClick) => _onClose = onClick;
         public void SetOnClaim(Action onClick) => _onClaim = onClick;
         public void SetOnExtend(Action onClick) => _onExtend = onClick;
+
+        public void SetOnWatchAds(Action onClick) => _onWatchAds = onClick;
 
         // ===== ITrippleQPopupView tối thiểu =====
         public bool IsVisible => gameObject.activeSelf;
@@ -262,6 +269,17 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             }
 
             _chestImage.sprite = _chestIconOpen[index];
+        }
+
+        public void ShowAdsBtn(bool isShow)
+        {
+            _adsBtn.gameObject.SetActive(isShow);
+            _paidCoinBtn.gameObject.SetActive(!isShow);
+        }
+
+        public void ShowPayCoins(int coinCost)
+        {
+            _paidCoinText.text = coinCost.ToString();
         }
     }
 }

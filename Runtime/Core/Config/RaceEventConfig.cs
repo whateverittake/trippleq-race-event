@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
@@ -31,6 +32,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public RaceReward Rank3Reward;
         public RaceReward Rank4Reward;
         public RaceReward Rank5Reward;
+
+        [Space]
+        public ExtendPayType ExtendPayType; // config quyết định pay kiểu gì
+        public int ExtendCoinCost;          // dùng khi Coins
+        public int ExtendAdsCount;          // dùng khi WatchAds (thường = 1)
     }
 
     [Serializable]
@@ -41,5 +47,12 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public int NoobCount;
 
         public int Total => BossCount + NormalCount + NoobCount;
+    }
+
+    [Serializable]
+    public enum ExtendPayType
+    {
+        WatchAds = 0,
+        Coins = 1,
     }
 }

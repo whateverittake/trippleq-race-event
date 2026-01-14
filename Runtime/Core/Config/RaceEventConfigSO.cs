@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
@@ -58,6 +58,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             NoobCount = 2
         };
 
+        [Space]
+        public ExtendPayType ExtendPayType; // config quyết định pay kiểu gì
+        public int ExtendCoinCost;          // dùng khi Coins
+        public int ExtendAdsCount;          // dùng khi WatchAds (thường = 1)
+
         /// <summary>
         /// Convert ScriptableObject to runtime config struct.
         /// </summary>
@@ -86,7 +91,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 BotComposition= _botComposition,
 
                 AllowExtend1H= AllowExtend1H,
-                ExtendHours= ExtendHours
+                ExtendHours= ExtendHours,
+
+                ExtendPayType= ExtendPayType,
+                ExtendCoinCost= ExtendCoinCost,
+                ExtendAdsCount= ExtendAdsCount,
             };
         }
     }

@@ -20,6 +20,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private BotPoolJson _pendingPool;
 
         private Action<RaceReward>? _boundRewardHandler;
+        private Action<Action<bool>>? _boundWatchAdsHandler;
+
 
         private void Awake()
         {
@@ -152,6 +154,21 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 isInTutorial: isInTutorial,
                 localNow: localNow
             );
+        }
+
+        public void BindWatchAdsToExtend(Action<Action<bool>> watchAdsAction)
+        {
+            // chống bind nhiều lần
+            if (_boundWatchAdsHandler != null)
+                _svc.OnExtendAdsRequested -= _boundWatchAdsHandler;
+
+            _boundWatchAdsHandler = onResult =>
+            {
+                // delegate hết cho framework/project
+                watchAdsAction?.Invoke(onResult);
+            };
+
+            _svc.OnExtendAdsRequested += _boundWatchAdsHandler;
         }
     }
 }

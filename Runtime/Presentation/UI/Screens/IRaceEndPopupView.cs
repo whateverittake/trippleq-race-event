@@ -34,9 +34,13 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         void SetOnCloseWithoutExtend(Action onClick);
 
+        void SetOnWatchAds(Action onClick);
+
         void SetDataLeaderBoard(IReadOnlyList<RaceParticipant> allRacer, int playerRank);
         void RenderLeaderBoard();
         void RenderUserReward();
         void OpenChestAnim();
+        void ShowAdsBtn(bool canWatchAds);
+        void ShowPayCoins(int coinCost);
     }
 }

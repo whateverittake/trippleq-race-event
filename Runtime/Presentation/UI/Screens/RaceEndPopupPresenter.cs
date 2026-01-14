@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TrippleQ.UiKit;
@@ -24,6 +25,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             View.SetOnExtend(OnExtend);
             View.SetOnCloseToOpenExtendView(OpenLastChance);
             View.SetOnCloseWithoutExtend(OnCloseWithoutExtend);
+            View.SetOnWatchAds(OnWatchAds);
 
             _svc.OnStateChanged += OnStateChanged;
             _svc.OnRunUpdated += OnRunUpdated;
@@ -161,15 +163,34 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void OnCloseWithoutExtend()
         {
-            //handle later
             //give reward
+            if(_svc.CanClaim()) _svc.Claim();
+            Hide();
             //close popup
         }
 
         private void OpenLastChance()
         {
             View.SetViewState(RaceEndPopupState.LastChance);
-            //render price extend
+
+            var offer = _svc.GetExtendOffer();
+
+            switch (offer.PayType)
+            {
+                case ExtendPayType.WatchAds:
+                    View.ShowAdsBtn(true);
+                    break;
+
+                case ExtendPayType.Coins:
+                    View.ShowAdsBtn(false);
+                    View.ShowPayCoins(offer.CoinCost);
+                    break;
+            }
+        }
+
+        private void OnWatchAds()
+        {
+            _svc.RequestWatchAdsToExtend();
         }
     }
 }
