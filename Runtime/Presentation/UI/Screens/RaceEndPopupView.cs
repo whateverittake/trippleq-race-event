@@ -11,6 +11,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     public class RaceEndPopupView : MonoBehaviour, IRaceEndPopupView
     {
         const string PrefixAvatar = "avatar";
+        const string PrefixLastChanceDes = "You're currently in {0} place";
 
         private static readonly string[] FirstPlaceLines =
         {
@@ -40,6 +41,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         [SerializeField] Image _chestImage;
 
         [SerializeField] RankClaimRewardUI[] _leaderBoardRanks;
+
+        [SerializeField] AvatarItemView _lastChanceAvatar;
+        [SerializeField] TMP_Text _desLastChance;
 
         private Action _onClose;
         private Action _onClaim;
@@ -213,6 +217,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private void RenderLastChance()
         {
             HideAll();
+            _lastChanceAvatar.Refresh();
+            _desLastChance.text = string.Format(PrefixLastChanceDes, ToOrdinal(_playerRank));
             _lastChanceView?.SetActive(true);
         }
 
