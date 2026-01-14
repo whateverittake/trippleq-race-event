@@ -40,12 +40,16 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public int ExtendHours = 1;           // default 1
 
         [Header("Race Reward")]
+        [Tooltip("2 ways to get reward (use bundleID follow Nhan core or simply int)")]
+        public bool UseBundleId = true;
+        [Space]
         public RaceReward Rank1Reward;
         public RaceReward Rank2Reward;
         public RaceReward Rank3Reward;
         public RaceReward Rank4Reward;
         public RaceReward Rank5Reward;
 
+        [Space]
         [SerializeField]
         private RaceBotComposition _botComposition = new RaceBotComposition
         {

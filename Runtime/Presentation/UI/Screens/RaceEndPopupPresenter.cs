@@ -109,7 +109,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             var snap = _svc.GetLeaderboardSnapshot(5); // hoặc _leaderBoardRanks.Length nếu view expose
 
             // 2) reward: chỉ dựa vào rank khi canClaim hoặc rank1 special
-            RaceReward reward = new RaceReward(0, 0, 0, 0, 0, 0);
+            RaceReward reward = new RaceReward();
 
             bool canClaim = _svc.CanClaim();
 
