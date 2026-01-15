@@ -65,6 +65,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 _leadRaceTrackBg.SetActive(false);
                 _scoreBg.SetActive(true);
             }
+
+            if(score<=0) _leadRaceTrackBg.SetActive(false);
         }
 
         internal void InitAsOpponent(RaceParticipant raceParticipant, int goalLevels, bool isLeader, int rewardRankId)
