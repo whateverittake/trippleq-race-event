@@ -1355,6 +1355,74 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         /// <summary>
         /// DEBUG ONLY:
+        /// Advance exactly ONE bot by ~1 logical step (≈ +1 level).
+        /// botIndex: index in _run.Opponents
+        /// </summary>
+        public void Debug_AdvanceSingleBot(int botIndex)
+        {
+            ThrowIfNotInitialized();
+
+            if (_run == null)
+            {
+                Log("[DEBUG] AdvanceSingleBot ignored (no run).");
+                return;
+            }
+
+            if (botIndex < 0 || botIndex >= _run.Opponents.Count)
+            {
+                Log($"[DEBUG] AdvanceSingleBot invalid index={botIndex}");
+                return;
+            }
+
+            var bot = _run.Opponents[botIndex];
+
+            if (bot.HasFinished)
+            {
+                Log($"[DEBUG] AdvanceSingleBot ignored (bot {botIndex} already finished).");
+                return;
+            }
+
+            // baseUtc = mốc mới nhất để tránh time đi lùi
+            long baseUtc = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            baseUtc = Math.Max(baseUtc, bot.LastUpdateUtcSeconds);
+            baseUtc = Math.Max(baseUtc, _run.Player.LastUpdateUtcSeconds);
+
+            // stepSeconds = đủ để bot này chắc chắn +1 level
+            long stepSeconds = (long)Math.Ceiling(bot.AvgSecondsPerLevel) + 1;
+
+            const int maxTries = 30;
+            int beforeLevel = bot.LevelsCompleted;
+
+            long fakeUtc = baseUtc;
+
+            for (int attempt = 1; attempt <= maxTries; attempt++)
+            {
+                fakeUtc += stepSeconds;
+
+                // ⚠️ chỉ simulate bot này
+                GhostBotSimulator.SimulateSingleBot(bot, _run.GoalLevels, fakeUtc);
+
+                if (bot.LevelsCompleted > beforeLevel)
+                {
+                    bot.LastUpdateUtcSeconds = fakeUtc;
+
+                    _debugFakeUtcSeconds = fakeUtc;
+                    _save.CurrentRun = _run;
+                    TrySave();
+                    PublishRunUpdated();
+
+                    var dt = DateTimeOffset.FromUnixTimeSeconds(fakeUtc).UtcDateTime;
+                    Log($"[DEBUG] AdvanceSingleBot index={botIndex} SUCCESS after {attempt} try, level={bot.LevelsCompleted}, fakeUtc={fakeUtc} (UTC {dt:HH:mm})");
+                    return;
+                }
+            }
+
+            Log($"[DEBUG] AdvanceSingleBot index={botIndex} FAILED (no progress after {maxTries} tries)");
+        }
+
+
+        /// <summary>
+        /// DEBUG ONLY:
         /// Advance bots from NOW until race end time.
         /// Guarantees no infinite loop.
         /// </summary>

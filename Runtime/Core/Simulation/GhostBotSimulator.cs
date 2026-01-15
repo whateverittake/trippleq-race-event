@@ -154,7 +154,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             return v;
         }
 
-        internal static void SimulateSingleBot(RaceParticipant bot, int goalLevels, long fakeUtc)
+        public static void SimulateSingleBot(RaceParticipant bot, int goalLevels, long fakeUtc)
         {
             if (bot.HasFinished) return;
 
