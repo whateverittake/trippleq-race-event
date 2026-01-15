@@ -244,5 +244,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             _boundNotEnoughCoinHandler?.Invoke();
         }
+
+        public void RequestOpenPopupFirstTime()
+        {
+            _svc.RequestEntryPopup(false,DateTime.UtcNow);
+        }
     }
 }
