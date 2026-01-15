@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Codice.CM.Common;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Analytics;
@@ -22,6 +23,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private Action<RaceReward>? _boundRewardHandler;
         private Action<Action<bool>>? _boundWatchAdsHandler;
 
+        private Action<int, Action<bool>> _boundSpendGoldHandler;
+        private Action _boundNotEnoughCoinHandler;
 
         private void Awake()
         {
@@ -51,6 +54,21 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
                     OnServiceReady?.Invoke(_svc);
                 }));
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                // cheat để hàm OnRequestExtend luôn chạy (approve luôn)
+                OnRequestExtend((coinNeed, cb) =>
+                {
+                    Debug.Log($"[CHEAT] RequestSpendGold coinNeed={coinNeed} => APPROVE");
+                    cb?.Invoke(true);
+                });
+
+                // cheat để OnNotEnoughCoinToExtend debug ra string (khi bị gọi)
+                OnNotEnoughCoinToExtend(() =>
+                {
+                    Debug.Log("[CHEAT] OpenNotEnoughCoinUI called");
+                });
+#endif
             }
             else
             {
@@ -186,6 +204,46 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             };
 
             _svc.OnExtendAdsRequested += _boundWatchAdsHandler;
+        }
+
+        public void OnRequestExtend(Action<int, Action<bool>> spendGoldHandler)
+        {
+            _boundSpendGoldHandler = null;
+            _boundSpendGoldHandler = spendGoldHandler;
+        }
+
+        public void OnNotEnoughCoinToExtend(Action action)
+        {
+            _boundNotEnoughCoinHandler = null;
+            _boundNotEnoughCoinHandler = action;
+        }
+
+        public void RequestSpendGold(int coinNeed, Action<bool> reply)
+        {
+            // nếu chưa bind handler thì mặc định fail
+            if (_boundSpendGoldHandler == null)
+            {
+                reply?.Invoke(false);
+                return;
+            }
+
+            bool called = false;
+
+            void Once(bool ok)
+            {
+                if (called) return;
+                called = true;
+                if (!ok) OpenNotEnoughCoinUI();
+                reply?.Invoke(ok);
+            }
+
+            _boundSpendGoldHandler.Invoke(coinNeed, Once);
+        }
+
+
+        public void OpenNotEnoughCoinUI()
+        {
+            _boundNotEnoughCoinHandler?.Invoke();
         }
     }
 }

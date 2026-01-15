@@ -1,7 +1,4 @@
-﻿using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 using TrippleQ.UiKit;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
@@ -11,6 +8,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private readonly RaceEventService _svc;
 
         private RaceReward _currentReward;
+
+        public Action NotEnoughCoins { get; internal set; }
+
+        public event Action<int, Action<bool>> RequestExtendByCoins;
 
         public RaceEndPopupPresenter(RaceEventService svc)
         {
@@ -157,6 +158,35 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void OnExtend()
         {
+
+            var offer = _svc.GetExtendOffer();
+
+            if (offer.PayType == ExtendPayType.Coins)
+            {
+                int coinNeed = offer.CoinCost;
+
+                if (RequestExtendByCoins == null)
+                {
+                    NotEnoughCoins?.Invoke();
+                    return;
+                }
+
+                RequestExtendByCoins.Invoke(coinNeed, approved =>
+                {
+                    if (!approved)
+                    {
+                        NotEnoughCoins?.Invoke();
+                        return;
+                    }
+
+                    _svc.Extend1H();
+                    Render();
+                });
+
+                return;
+            }
+
+            // Ads / Free
             _svc.Extend1H();
             Render();
         }

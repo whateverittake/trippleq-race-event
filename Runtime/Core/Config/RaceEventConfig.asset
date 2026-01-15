@@ -24,7 +24,9 @@ MonoBehaviour:
   DurationHours: 24
   AllowExtend1H: 1
   ExtendHours: 1
+  UseBundleId: 1
   Rank1Reward:
+    BundleId: 
     Gold: 300
     Gems: 0
     Booster1: 0
@@ -32,6 +34,7 @@ MonoBehaviour:
     Booster3: 0
     Booster4: 0
   Rank2Reward:
+    BundleId: 
     Gold: 200
     Gems: 0
     Booster1: 0
@@ -39,6 +42,7 @@ MonoBehaviour:
     Booster3: 0
     Booster4: 0
   Rank3Reward:
+    BundleId: 
     Gold: 150
     Gems: 0
     Booster1: 0
@@ -46,6 +50,7 @@ MonoBehaviour:
     Booster3: 0
     Booster4: 0
   Rank4Reward:
+    BundleId: 
     Gold: 80
     Gems: 0
     Booster1: 0
@@ -53,6 +58,7 @@ MonoBehaviour:
     Booster3: 0
     Booster4: 0
   Rank5Reward:
+    BundleId: 
     Gold: 50
     Gems: 0
     Booster1: 0
@@ -63,3 +69,6 @@ MonoBehaviour:
     BossCount: 1
     NormalCount: 1
     NoobCount: 2
+  ExtendPayType: 1
+  ExtendCoinCost: 0
+  ExtendAdsCount: 0

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using static TrippleQ.Event.RaceEvent.Runtime.PopupTypes;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
@@ -90,7 +91,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _searchingPresenter= new RaceSearchingPopupPresenter(_svc);
             _mainPresenter = new RaceMainPopupPresenter(_svc, isInTutorial);
             _endPresenter= new RaceEndPopupPresenter(_svc);
-            _infoPresenter= new RaceInfoPopupPresenter(_svc);
+
+            _endPresenter.RequestExtendByCoins += HandleRequestExtendCoins;
+            _endPresenter.NotEnoughCoins += HandleNotEnoughCoins;
+
+            _infoPresenter = new RaceInfoPopupPresenter(_svc);
 
             // --- initial bind snapshot ---
             //ReplaySnapshot();
@@ -100,9 +105,17 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             // đóng và unbind tất cả presenters (quan trọng)
             HideAll();
+
             _entryPresenter = null;
             _mainPresenter = null;
             _searchingPresenter = null;
+
+            if (_endPresenter != null)
+            {
+                _endPresenter.RequestExtendByCoins -= HandleRequestExtendCoins;
+                _endPresenter.NotEnoughCoins -= HandleNotEnoughCoins;
+            }
+
             _endPresenter = null;
 
             _hudPresenter?.Dispose();
@@ -238,5 +251,24 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _endPresenter.Show();
         }
 
+        private void HandleRequestExtendCoins(int coinNeed, Action<bool> reply)
+        {
+            _bootstrap.RequestSpendGold(coinNeed, success =>
+            {
+                if (!success)
+                {
+                    HandleNotEnoughCoins();
+                    reply(false);
+                    return;
+                }
+
+                reply(true);
+            });
+        }
+
+        private void HandleNotEnoughCoins()
+        {
+            _bootstrap.OpenNotEnoughCoinUI();
+        }
     }
 }
