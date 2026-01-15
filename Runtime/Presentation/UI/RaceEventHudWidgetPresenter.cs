@@ -43,7 +43,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 s.Label,
                 s.ShowTextCountdown
             );
-            _view.SetStatus(status, _svc.FormatHMS(s.Remaining));
+            _view.SetStatus(status, _svc.FormatHM(s.Remaining));
         }
 
         private void OnClick()

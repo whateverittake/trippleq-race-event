@@ -877,7 +877,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             // If ended & can claim => show claim attention (not sleeping)
             if (State == RaceEventState.Ended && CanClaim())
-                return new RaceHudStatus(true, false, true, TimeSpan.Zero, "Claim Now", false);
+                return new RaceHudStatus(true, false, true, TimeSpan.Zero, "Claim now!", false);
 
             // If in race -> hide widget (hoặc show active icon)
             if (State == RaceEventState.InRace || State == RaceEventState.Searching)
@@ -897,7 +897,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             if (canShowEntry)
             {
                 // active state: no countdown
-                return new RaceHudStatus(true, false, false, TimeSpan.Zero, "RACE", false);
+                return new RaceHudStatus(true, false, false, TimeSpan.Zero, "Race now!", false);
             }
 
             // sleeping + countdown to next reset (daily)
@@ -905,7 +905,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             var remaining2 = nextReset2 - localNow;
             if (remaining2 < TimeSpan.Zero) remaining2 = TimeSpan.Zero;
 
-            return new RaceHudStatus(true, true, false, remaining2, "NEXT RACE", true);
+            return new RaceHudStatus(true, true, false, remaining2, "Next in: ", true);
         }
 
         public void RequestInRacePopup()
@@ -1275,6 +1275,19 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             int m = t.Minutes;
             int s = t.Seconds;
             return $"{h:00}:{m:00}:{s:00}";
+        }
+
+        public string FormatHM(TimeSpan t)
+        {
+            if (t < TimeSpan.Zero) t = TimeSpan.Zero;
+
+            // làm tròn lên theo phút
+            var totalMinutes = (int)Math.Ceiling(t.TotalMinutes);
+
+            int h = totalMinutes / 60;
+            int m = totalMinutes % 60;
+
+            return $"{h:00}:{m:00}";
         }
 
         /// <summary>
