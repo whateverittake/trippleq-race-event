@@ -153,5 +153,26 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             if (v > 0.5f) v = 0.5f; // cap 50%
             return v;
         }
+
+        internal static void SimulateSingleBot(RaceParticipant bot, int goalLevels, long fakeUtc)
+        {
+            if (bot.HasFinished) return;
+
+            // logic y hệt SimulateBots nhưng áp cho 1 bot
+            var elapsed = fakeUtc - bot.LastUpdateUtcSeconds;
+            if (elapsed <= 0) return;
+
+            int gainedLevels = (int)(elapsed / bot.AvgSecondsPerLevel);
+            if (gainedLevels <= 0) return;
+
+            bot.LevelsCompleted += gainedLevels;
+            bot.LastUpdateUtcSeconds += (long)(gainedLevels * bot.AvgSecondsPerLevel);
+
+            if (!bot.HasFinished && bot.LevelsCompleted >= goalLevels)
+            {
+                bot.HasFinished = true;
+                bot.FinishedUtcSeconds = bot.LastUpdateUtcSeconds;
+            }
+        }
     }
 }

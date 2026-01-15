@@ -106,6 +106,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _svc.Debug_PlayerWinUsingFakeUtc();
         }
 
+        public void CheatBotIndex(int index)
+        {
+            _svc.Debug_AdvanceSingleBot(index);
+        }
+
         private void Update()
         {
             if(_svc.IsInitialized) _svc.Tick(Time.deltaTime);
