@@ -192,6 +192,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             if (State != RaceEventState.Ended) return false;
             if (!_run.IsFinalized) return false;
             if (_run.HasClaimed) return false;
+
+            if (!_run.Player.HasFinished) return false;
+
             return true;
         }
 
@@ -882,10 +885,30 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // If in race -> hide widget (hoặc show active icon)
             if (State == RaceEventState.InRace || State == RaceEventState.Searching)
             {
-                var nextReset = GetNextResetLocal(localNow);
-                var remaining = nextReset - localNow;
-                if (remaining < TimeSpan.Zero) remaining = TimeSpan.Zero;
-                return new RaceHudStatus(true, false, false, remaining, "End in: ", true);
+                // no run? fallback hide
+                if (_run == null)
+                    return new RaceHudStatus(false, false, false, TimeSpan.Zero, "", false);
+
+                // (A) EXTENDED: show remaining to EndUtc (≈ 1h),
+                // and if expired -> hide (your requirement)
+                if (_run.HasExtended)
+                {
+                    var nowUtc = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    var remainingSec = _run.EndUtcSeconds - nowUtc;
+
+                    if (remainingSec <= 0)
+                        return new RaceHudStatus(false, false, false, TimeSpan.Zero, "", false);
+
+                    var remaining = TimeSpan.FromSeconds(remainingSec);
+                    return new RaceHudStatus(true, false, false, remaining, "End in: ", true);
+                }
+
+                // (B) NOT EXTENDED: always count down to next 4AM reset
+                var nextReset = GetNextResetLocal(localNow); // uses ResetHourLocal
+                var remaining2 = nextReset - localNow;
+                if (remaining2 < TimeSpan.Zero) remaining2 = TimeSpan.Zero;
+
+                return new RaceHudStatus(true, false, false, remaining2, "End in: ", true);
             }
 
             // Otherwise: idle/eligible -> if eligible you may show active icon, if not eligible show sleeping + countdown
@@ -896,12 +919,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 return new RaceHudStatus(true, false, false, TimeSpan.Zero, "Race now!", false);
             }
 
-            // sleeping + countdown to next reset (daily)
-            var nextReset2 = GetNextResetLocal(localNow);
-            var remaining2 = nextReset2 - localNow;
-            if (remaining2 < TimeSpan.Zero) remaining2 = TimeSpan.Zero;
+            var nextReset3 = GetNextResetLocal(localNow);
+            var remaining3 = nextReset3 - localNow;
+            if (remaining3 < TimeSpan.Zero) remaining3 = TimeSpan.Zero;
 
-            return new RaceHudStatus(true, true, false, remaining2, "Next in: ", true);
+            return new RaceHudStatus(true, true, false, remaining3, "Next in: ", true);
         }
 
         public void RequestInRacePopup()
