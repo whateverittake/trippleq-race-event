@@ -82,6 +82,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         public void SetOnClose(Action onClick) => _onClose = onClick;
 
+        public void SetCloseOptional(Action onClick)
+        {
+
+        }
         // Hook button
         public void OnQuitPopup() => _onClose?.Invoke();
 

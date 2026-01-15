@@ -10,10 +10,15 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private Action _onAgree;
         private Action _onClose;
+        private Action _onCloseOptional;
 
         // Button hook
         public void OnClick_AgreeEnterRace() => _onAgree?.Invoke();
-        public void OnQuitPopup() => _onClose?.Invoke();
+        public void OnQuitPopup() 
+        {
+            _onClose?.Invoke();
+            _onCloseOptional?.Invoke();
+        }
 
         // IRaceEntryPopupView
         public bool IsVisible => gameObject.activeSelf;
@@ -33,5 +38,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         public void SetOnAgree(Action onClick) => _onAgree = onClick;
         public void SetOnClose(Action onClick) => _onClose = onClick;
+
+        public void SetCloseOptional(Action onClick)
+        {
+            _onCloseOptional= onClick;
+        }
     }
 }

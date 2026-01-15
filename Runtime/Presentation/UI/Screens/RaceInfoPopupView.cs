@@ -66,5 +66,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             _timeText.text = _prefix+v;
         }
+
+        public void SetCloseOptional(Action onClick)
+        {
+            
+        }
     }
 }

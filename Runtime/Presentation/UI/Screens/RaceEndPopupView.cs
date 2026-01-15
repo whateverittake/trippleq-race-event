@@ -53,13 +53,23 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private Action _onCloseToOpenExtendView;
         private Action _onCloseWithoutExtend;
         private Action _onWatchAds;
+        private Action _onCloseOptional;
 
         private IReadOnlyList<RaceParticipant> _racer;
         private int _playerRank = 1;
 
         // ===== Button hooks (gán từ UI Button OnClick) =====
-        public void OnQuitPopup() => _onClose?.Invoke();
-        public void OnClaimReward() => _onClaim?.Invoke();
+        public void OnQuitPopup() 
+        { 
+            _onClose?.Invoke();
+            _onCloseOptional?.Invoke();
+        }
+
+        public void OnClaimReward() 
+        {
+            _onClaim?.Invoke();
+            _onCloseOptional?.Invoke();
+        }
         public void CloseAndOpenExtendViewClick()
         {
             _onCloseToOpenExtendView?.Invoke();
@@ -68,6 +78,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void CloseWithoutExtendClick()
         {
             _onCloseWithoutExtend?.Invoke();
+            _onCloseOptional?.Invoke();
         }
 
         public void OnExtendRaceClick() => _onExtend?.Invoke();
@@ -106,6 +117,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void SetOnClaim(Action onClick) => _onClaim = onClick;
         public void SetOnExtend(Action onClick) => _onExtend = onClick;
 
+        public void SetCloseOptional(Action onClick)
+        {
+            _onCloseOptional= onClick;
+        }
         public void SetOnWatchAds(Action onClick) => _onWatchAds = onClick;
 
         // ===== ITrippleQPopupView tối thiểu =====
