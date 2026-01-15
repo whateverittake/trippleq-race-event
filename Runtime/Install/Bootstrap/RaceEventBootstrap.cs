@@ -247,7 +247,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         public void RequestOpenPopupFirstTime()
         {
-            _svc.RequestEntryPopup(false,DateTime.UtcNow);
+            _svc.ForceRequestEntryPopup(false,DateTime.UtcNow);
         }
     }
 }
