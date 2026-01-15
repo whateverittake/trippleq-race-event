@@ -78,7 +78,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             }
         }
 
-        internal void Dispose()
+        public void Dispose()
         {
             _view.SetOnClick(null);
         }
