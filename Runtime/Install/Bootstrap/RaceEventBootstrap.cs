@@ -86,26 +86,38 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _svc.OnRewardGranted += _boundRewardHandler;
         }
 
+        public void CheatResetRace()
+        {
+            _svc.Debug_ResetAfterClaimAndAllowNewRun();
+        }
+
+        public void CheatPlusBot()
+        {
+            _svc.Debug_AdvanceBots();
+        }
+
+        public void CheatEndRace()
+        {
+            _svc.DebugEndEvent();
+        }
+
+        public void CheatPlayerWinUsingFakeUtc()
+        {
+            _svc.Debug_PlayerWinUsingFakeUtc();
+        }
+
         private void Update()
         {
             if(_svc.IsInitialized) _svc.Tick(Time.deltaTime);
 
-            if (Input.GetKeyDown(KeyCode.R)) // debug
+            if (Input.GetKeyDown(KeyCode.P)) // debug
             {
-                _svc.Debug_ResetAfterClaimAndAllowNewRun();
+                CheatResetRace();
             }
 
-            if(Input.GetKeyDown(KeyCode.T)) // debug
+            if (Input.GetKeyDown(KeyCode.O)) // debug
             {
-                _svc.OnEnterMain(
-                    isInTutorial: false,
-                    localNow: DateTime.Now
-                );
-            }
-
-            if (Input.GetKeyDown(KeyCode.L)) // debug
-            {
-                _svc.Debug_AdvanceBots();
+                CheatPlusBot();
             }
 
             if (Input.GetKeyDown(KeyCode.K)) // debug
@@ -113,15 +125,15 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 _svc.Debug_AdvanceBotsToEnd();
             }
 
-            if(Input.GetKeyDown(KeyCode.J)) // debug
+            if(Input.GetKeyDown(KeyCode.I)) // debug
             {
                 //DebugWinLevel();
-                _svc.Debug_PlayerWinUsingFakeUtc();
+                CheatPlayerWinUsingFakeUtc();
             }
 
-            if(Input.GetKeyDown(KeyCode.H)) // debug
+            if(Input.GetKeyDown(KeyCode.U)) // debug
             {
-                _svc.DebugEndEvent();
+                CheatEndRace();
             }
 
             if (Input.GetKeyDown(KeyCode.M))
