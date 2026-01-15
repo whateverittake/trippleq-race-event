@@ -193,10 +193,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void OnCloseWithoutExtend()
         {
-            //give reward
-            if(_svc.CanClaim()) _svc.Claim();
-            Hide();
-            //close popup
+            _svc.DeclineExtend();
         }
 
         private void OpenLastChance()

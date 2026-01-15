@@ -807,6 +807,26 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             };
         }
 
+        public void DeclineExtend()
+        {
+            ThrowIfNotInitialized();
+            if (_run == null) return;
+
+            // Chỉ cho decline khi đang offer
+            if (State != RaceEventState.ExtendOffer) return;
+
+            var utcNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            // Mark để FinalizeIfTimeUp không offer nữa
+            _run.HasExtended = true; // trick: coi như đã "xử lý extend" để không offer lặp
+                                     // hoặc tốt hơn: thêm field _run.HasDeclinedExtend (nếu bạn muốn sạch)
+
+            // Finalize ngay
+            _run.EndUtcSeconds = Math.Min(_run.EndUtcSeconds, utcNow);
+            _run.IsFinalized = false; // đảm bảo finalize chạy
+            FinalizeIfTimeUp(utcNow);
+        }
+
         public bool CanExtend1H()
         {
             ThrowIfNotInitialized();
