@@ -882,13 +882,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // If in race -> hide widget (hoặc show active icon)
             if (State == RaceEventState.InRace || State == RaceEventState.Searching)
             {
-                if (_run == null)
-                    return new RaceHudStatus(true, false, false, TimeSpan.Zero, "End in: ", true);
-
-                var nowUtc = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                var remainingSec = Math.Max(0, _run.EndUtcSeconds - nowUtc);
-                var remaining = TimeSpan.FromSeconds(remainingSec);
-
+                var nextReset = GetNextResetLocal(localNow);
+                var remaining = nextReset - localNow;
+                if (remaining < TimeSpan.Zero) remaining = TimeSpan.Zero;
                 return new RaceHudStatus(true, false, false, remaining, "End in: ", true);
             }
 
@@ -1287,7 +1283,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             int h = totalMinutes / 60;
             int m = totalMinutes % 60;
 
-            return $"{h:00}:{m:00}";
+            return $"{h}h{m:00}'";
         }
 
         /// <summary>

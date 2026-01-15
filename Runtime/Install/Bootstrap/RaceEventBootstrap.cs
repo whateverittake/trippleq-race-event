@@ -1,8 +1,6 @@
-﻿using Codice.CM.Common;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Analytics;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
@@ -60,7 +58,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 OnRequestExtend((coinNeed, cb) =>
                 {
                     Debug.Log($"[CHEAT] RequestSpendGold coinNeed={coinNeed} => APPROVE");
-                    cb?.Invoke(false);
+                    cb?.Invoke(true);
                 });
 
                 // cheat để OnNotEnoughCoinToExtend debug ra string (khi bị gọi)
