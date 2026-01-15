@@ -60,7 +60,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 OnRequestExtend((coinNeed, cb) =>
                 {
                     Debug.Log($"[CHEAT] RequestSpendGold coinNeed={coinNeed} => APPROVE");
-                    cb?.Invoke(true);
+                    cb?.Invoke(false);
                 });
 
                 // cheat để OnNotEnoughCoinToExtend debug ra string (khi bị gọi)
@@ -233,7 +233,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             {
                 if (called) return;
                 called = true;
-                if (!ok) OpenNotEnoughCoinUI();
+
+                //if (!ok) OpenNotEnoughCoinUI();
                 reply?.Invoke(ok);
             }
 

@@ -253,17 +253,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void HandleRequestExtendCoins(int coinNeed, Action<bool> reply)
         {
-            _bootstrap.RequestSpendGold(coinNeed, success =>
-            {
-                if (!success)
-                {
-                    HandleNotEnoughCoins();
-                    reply(false);
-                    return;
-                }
-
-                reply(true);
-            });
+            _bootstrap.RequestSpendGold(coinNeed, reply);
         }
 
         private void HandleNotEnoughCoins()
