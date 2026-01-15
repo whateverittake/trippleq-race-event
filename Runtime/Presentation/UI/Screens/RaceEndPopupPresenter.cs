@@ -9,7 +9,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private RaceReward _currentReward;
 
-        public Action NotEnoughCoins { get; internal set; }
+        public Action NotEnoughCoins;
 
         public event Action<int, Action<bool>> RequestExtendByCoins;
 
