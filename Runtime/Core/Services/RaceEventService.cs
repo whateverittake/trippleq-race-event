@@ -407,23 +407,26 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         // --------------------
         public bool ShouldShowEntryPopup(bool isInTutorial, DateTime localNow)
         {
+            Log("xx 4: " + isInTutorial);
             ThrowIfNotInitialized();
             // Do not show when already in race flow
             if (State == RaceEventState.Searching || State == RaceEventState.InRace)
                 return false;
-
+            Log("xx 5: " + isInTutorial);
             // Feature gating
             if (!ActiveConfigForRunOrCursor().Enabled) return false;
-
+            Log("xx 6: " + isInTutorial);
             // Tutorial gating
             if (ActiveConfigForRunOrCursor().BlockDuringTutorial && isInTutorial) return false;
 
+            Log("xx 7: " + isInTutorial);
             // Min level gating
             if (CurrentLevel < ActiveConfigForRunOrCursor().MinPlayerLevel) return false;
 
+            Log("xx 8: " + isInTutorial);
             // Cooldown gating (hours)
             if (IsInCooldown(localNow)) return false;
-
+            Log("xx 9: " + isInTutorial);
             // Once per day gating (based on resetHourLocal)
             if (HasShownEntryInCurrentWindow(localNow)) return false;
 
@@ -942,8 +945,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         public void RequestEntryPopup(bool isInTutorial, DateTime localNow)
         {
+            Log("xx 1: "+ isInTutorial);
             ThrowIfNotInitialized();
+            Log("xx 2: " + isInTutorial);
             RefreshEligibility(isInTutorial, localNow);
+            Log("xx 3: " + isInTutorial);
             if (ShouldShowEntryPopup(isInTutorial, localNow))
                 RequestPopup(new PopupRequest(PopupType.Entry));
         }
