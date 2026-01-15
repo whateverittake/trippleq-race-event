@@ -882,10 +882,14 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // If in race -> hide widget (hoặc show active icon)
             if (State == RaceEventState.InRace || State == RaceEventState.Searching)
             {
-                var nextReset = GetNextResetLocal(localNow);
-                var remaining = nextReset - localNow;
-                if (remaining < TimeSpan.Zero) remaining = TimeSpan.Zero;
-                return new RaceHudStatus(true, false, false, remaining, "End in: ",true);
+                if (_run == null)
+                    return new RaceHudStatus(true, false, false, TimeSpan.Zero, "End in: ", true);
+
+                var nowUtc = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                var remainingSec = Math.Max(0, _run.EndUtcSeconds - nowUtc);
+                var remaining = TimeSpan.FromSeconds(remainingSec);
+
+                return new RaceHudStatus(true, false, false, remaining, "End in: ", true);
             }
 
             // Otherwise: idle/eligible -> if eligible you may show active icon, if not eligible show sleeping + countdown
