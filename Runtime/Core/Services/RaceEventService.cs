@@ -360,11 +360,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             RefreshEligibility(isInTutorial, localNow);
 
-            // Optional: show entry right after win if eligible (tweak later)
-            if (ShouldShowEntryPopup(isInTutorial, localNow))
-            {
-                RequestPopup(new PopupRequest(PopupType.Entry));
-            }
+            //// Optional: show entry right after win if eligible (tweak later)
+            //if (ShouldShowEntryPopup(isInTutorial, localNow))
+            //{
+            //    //RequestPopup(new PopupRequest(PopupType.Entry));
+            //}
 
             if (_run != null && State == RaceEventState.InRace)
             {
