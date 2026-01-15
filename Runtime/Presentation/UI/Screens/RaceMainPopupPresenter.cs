@@ -49,7 +49,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             View.InitDataReward(_svc.GetRewardForRank(1),_svc.GetRewardForRank(2),_svc.GetRewardForRank(3));
         }
 
-        internal void Tick(float deltaTime)
+        public void Tick(float deltaTime)
         {
             if (!IsBound) return;
             var localNow = DateTime.Now;

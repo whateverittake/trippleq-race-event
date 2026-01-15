@@ -25,7 +25,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             View.SetClose(null);
         }
 
-        internal void Tick(float deltaTime)
+        public void Tick(float deltaTime)
         {
             if (!IsBound) return;
             var localNow = DateTime.Now;
