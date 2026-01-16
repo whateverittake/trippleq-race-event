@@ -939,29 +939,29 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             if (!cfg.Enabled)
                 return new RaceHudStatus(false, false, false, TimeSpan.Zero, "Next: ", false);
 
-            //HUD preview lock window ---
-            const int previewOffset = 5;
-            int unlockLevel = Math.Max(0, cfg.MinPlayerLevel);
-            int showPreviewLevel = Math.Max(0, unlockLevel - previewOffset);
+            ////HUD preview lock window ---
+            //const int previewOffset = 5;
+            //int unlockLevel = Math.Max(0, cfg.MinPlayerLevel);
+            //int showPreviewLevel = Math.Max(0, unlockLevel - previewOffset);
 
-            // before preview => hide widget
-            if (CurrentLevel < showPreviewLevel)
-                return new RaceHudStatus(false, false, false, TimeSpan.Zero, "", false);
+            //// before preview => hide widget
+            //if (CurrentLevel < showPreviewLevel)
+            //    return new RaceHudStatus(false, false, false, TimeSpan.Zero, "", false);
 
-            // preview but locked
-            if (CurrentLevel < unlockLevel)
-            {
-                return new RaceHudStatus(
-                    isVisible: true,
-                    isSleeping: true,          // dùng icon xám/sleeping state
-                    hasClaim: false,
-                    remaining: TimeSpan.Zero,
-                    label: $"Open in Level {unlockLevel}",
-                    showTextCountdown: false,
-                    isLocked: true,
-                    unlockAtLevel: unlockLevel
-                );
-            }
+            //// preview but locked
+            //if (CurrentLevel < unlockLevel)
+            //{
+            //    return new RaceHudStatus(
+            //        isVisible: true,
+            //        isSleeping: true,          // dùng icon xám/sleeping state
+            //        hasClaim: false,
+            //        remaining: TimeSpan.Zero,
+            //        label: $"Open in Level {unlockLevel}",
+            //        showTextCountdown: false,
+            //        isLocked: true,
+            //        unlockAtLevel: unlockLevel
+            //    );
+            //}
 
             // If ended & can claim => show claim attention (not sleeping)
             if (State == RaceEventState.Ended && CanClaim())
