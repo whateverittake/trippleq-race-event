@@ -934,7 +934,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             ThrowIfNotInitialized();
 
             var cfg = ActiveConfigForRunOrCursor();
-
+            Log("xx 1");
             // if feature off -> hide
             if (!cfg.Enabled)
                 return new RaceHudStatus(false, false, false, TimeSpan.Zero, "Next: ", false);
@@ -962,11 +962,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             //        unlockAtLevel: unlockLevel
             //    );
             //}
-
+            Log("xx 2");
             // If ended & can claim => show claim attention (not sleeping)
             if (State == RaceEventState.Ended && CanClaim())
                 return new RaceHudStatus(true, false, true, TimeSpan.Zero, "Claim now!", false);
-
+            Log("xx 3");
             // If in race -> hide widget (hoặc show active icon)
             if (State == RaceEventState.InRace || State == RaceEventState.Searching)
             {
@@ -995,7 +995,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
                 return new RaceHudStatus(true, false, false, remaining2, "End in: ", true);
             }
-
+            Log("xx 4");
             // Otherwise: idle/eligible -> if eligible you may show active icon, if not eligible show sleeping + countdown
             var canShowEntry = ShouldShowEntryPopup(isInTutorial: false, localNow); // HUD không biết tutorial thì bạn có thể truyền vào overload khác
             if (canShowEntry)
@@ -1003,7 +1003,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 // active state: no countdown
                 return new RaceHudStatus(true, false, false, TimeSpan.Zero, "Race now!", false);
             }
-
+            Log("xx 5");
             var nextReset3 = GetNextResetLocal(localNow);
             var remaining3 = nextReset3 - localNow;
             if (remaining3 < TimeSpan.Zero) remaining3 = TimeSpan.Zero;
