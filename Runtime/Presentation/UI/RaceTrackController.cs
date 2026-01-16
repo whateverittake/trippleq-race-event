@@ -49,7 +49,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void UpdateScore(int score, bool isLeader)
         {
-            if(score>0) _scoreObj.SetActive(true);
+            _scoreObj.SetActive(true);
             _scoreText.text = score.ToString();
 
             if (isLeader)
