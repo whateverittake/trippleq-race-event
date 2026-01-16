@@ -947,7 +947,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             //HUD preview lock window ---
             const int previewOffset = 5;
-            int unlockLevel = Math.Max(0, cfg.MinPlayerLevel);
+            int unlockLevel = Math.Max(0, 20);
             int showPreviewLevel = Math.Max(0, unlockLevel - previewOffset);
 
             // before preview => hide widget

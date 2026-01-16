@@ -326,7 +326,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 394592760622716604}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -334,11 +334,11 @@ RectTransform:
   - {fileID: 1630065095713978168}
   - {fileID: 6587525477152102737}
   - {fileID: 1293278910443282552}
-  m_Father: {fileID: 2703201545721790297}
+  m_Father: {fileID: 5842223795401480399}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: -29.2}
+  m_AnchoredPosition: {x: 0, y: -45}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1523987513343693055
@@ -1627,7 +1627,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 2703201545721790297}
+  - {fileID: 755656921315666085}
   - {fileID: 6970910021646154953}
   - {fileID: 149670649470459921}
   - {fileID: 1413670797327742793}
@@ -2565,13 +2565,14 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 2703201545721790297}
   - {fileID: 1303392745645229130}
   m_Father: {fileID: 5842223795401480399}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -825}
-  m_SizeDelta: {x: 184, y: 234}
+  m_SizeDelta: {x: 221, y: 305.81622}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7779123471122587456
 CanvasRenderer:
@@ -2601,7 +2602,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: a7e655f01fd0a7d488fc46d911690f52, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 2c974d34e64696c4998f44df993d17a3, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2767,7 +2768,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 5842223795401480399}
+    m_TransformParent: {fileID: 1413670797327742793}
     m_Modifications:
     - target: {fileID: 92989009199195475, guid: c533db51d7c5b1f4ebba23f2dbd998e1, type: 3}
       propertyPath: m_Pivot.x
@@ -2819,15 +2820,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 92989009199195475, guid: c533db51d7c5b1f4ebba23f2dbd998e1, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 92989009199195475, guid: c533db51d7c5b1f4ebba23f2dbd998e1, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 92989009199195475, guid: c533db51d7c5b1f4ebba23f2dbd998e1, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 92989009199195475, guid: c533db51d7c5b1f4ebba23f2dbd998e1, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -2835,7 +2836,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 92989009199195475, guid: c533db51d7c5b1f4ebba23f2dbd998e1, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 78.4
+      value: 177
       objectReference: {fileID: 0}
     - target: {fileID: 92989009199195475, guid: c533db51d7c5b1f4ebba23f2dbd998e1, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -2859,10 +2860,7 @@ PrefabInstance:
       objectReference: {fileID: 8241731738946099021}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 92989009199195475, guid: c533db51d7c5b1f4ebba23f2dbd998e1, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 755656921315666085}
+    m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c533db51d7c5b1f4ebba23f2dbd998e1, type: 3}
 --- !u!224 &2703201545721790297 stripped
