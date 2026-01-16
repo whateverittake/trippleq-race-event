@@ -92,8 +92,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 isInTutorial: isInTutorial,
                 botPool: _pendingPool
             );
-
-            _svc.SetTestMode(false);
         }
 
         public void OnClaimRewardRace(Action<RaceReward> claimAction)
