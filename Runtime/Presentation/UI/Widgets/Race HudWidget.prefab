@@ -601,7 +601,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Next in: 17h20p30s'
+  m_text: RACE
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: b1d6051a4025fef438caff6d01fa2fdb, type: 2}
   m_sharedMaterial: {fileID: 2827316262997670408, guid: b1d6051a4025fef438caff6d01fa2fdb, type: 2}
@@ -628,7 +628,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 23.6
+  m_fontSize: 39.2
   m_fontSizeBase: 38
   m_fontWeight: 400
   m_enableAutoSizing: 1
