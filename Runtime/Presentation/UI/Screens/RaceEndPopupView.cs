@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using TrippleQ.AvatarSystem;
+using TrippleQ.UiKit;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -31,6 +32,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         [SerializeField] GameObject _claimButton, _extendButton;
         [SerializeField] GameObject _rankView, _extendOfferView;
         [SerializeField] GameObject _lastChanceView;
+        [SerializeField] GameObject _noRewardView;
 
         [SerializeField] Sprite _titleChampion, _titleFininsh;
         [SerializeField] Image _titleImage;
@@ -46,6 +48,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         [SerializeField] AvatarItemView _lastChanceAvatar;
         [SerializeField] TMP_Text _desLastChance, _paidCoinText;
         [SerializeField] GameObject _adsBtn,_paidCoinBtn;
+
+        [SerializeField] RewardTooltipUIView _reward;
 
         private Action _onClose;
         private Action _onClaim;
@@ -87,27 +91,30 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         // ===== IRaceEndPopupView =====
 
-        public void SetViewState(RaceEndPopupState state)
+        public void SetViewState(RaceEndPopupState state, RewardData reward)
         {
             HideAll();
            
             switch (state)
             {
                 case RaceEndPopupState.FirstPlace:
-                    Render1stReward();
+                    Render1stReward(reward);
                     break;
                 case RaceEndPopupState.NormalPlace:
-                    RenderNormalReward();
+                    RenderNormalReward(reward);
                     break;
                 case RaceEndPopupState.NoClaim:
-                    if(_playerRank==1) Render1stReward();
-                    else RenderNormalReward();
+                    if(_playerRank==1) Render1stReward(reward);
+                    else RenderNormalReward(reward);
                     break;
                 case RaceEndPopupState.LastChance:
                     RenderLastChance();
                     break;
                 case RaceEndPopupState.CanExtend:
                     RenderCanExtendOffer();
+                    break;
+                case RaceEndPopupState.NoReward:
+                    RenderNoReward();
                     break;
 
             }
@@ -212,28 +219,38 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                     break;
 
             }
+
+            _chestImage.SetNativeSize();
         }
 
-        private void Render1stReward()
+        private void Render1stReward(RewardData reward)
         {
             HideAll();
             _rankView?.SetActive(true);
             _titleImage.sprite = _titleChampion;
             _titleImage.SetNativeSize();
+            _reward.UpdateView(reward);
         }
 
-        private void RenderNormalReward()
+        private void RenderNormalReward(RewardData reward)
         {
             HideAll();
             _rankView?.SetActive(true);
             _titleImage.sprite = _titleFininsh;
             _titleImage.SetNativeSize();
+            _reward.UpdateView(reward);
         }
 
         private void RenderCanExtendOffer()
         {
             HideAll();
             _extendOfferView?.SetActive(true);
+        }
+
+        private void RenderNoReward()
+        {
+            HideAll();
+            _noRewardView?.SetActive(true);
         }
 
         private void RenderLastChance()
@@ -249,6 +266,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _rankView?.SetActive(false);
             _extendOfferView?.SetActive(false);
             _lastChanceView?.SetActive(false);
+            _noRewardView?.SetActive(false);
         }
 
         public void SetClaimVisible(bool visible)

@@ -1,5 +1,6 @@
 using System;
 using TrippleQ.UiKit;
+using static TrippleQ.Event.RaceEvent.Runtime.PopupTypes;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
@@ -32,6 +33,23 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             var s = _svc.GetHudStatus(localNow);
 
             View.SetTimeStatus(_svc.FormatHMS(s.Remaining));
+        }
+
+        protected override void OnBeforeShow()
+        {
+            base.OnBeforeShow();
+        }
+
+        protected override void OnAfterShow()
+        {
+            base.OnAfterShow();
+            _svc.NotifyPopupShown(PopupType.Info);
+        }
+
+        protected override void OnAfterHide()
+        {
+            _svc.NotifyPopupHidden(PopupType.Info);
+            base.OnAfterHide();
         }
     }
 }

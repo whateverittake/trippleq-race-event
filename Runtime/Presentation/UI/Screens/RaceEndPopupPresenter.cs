@@ -71,38 +71,39 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             SetUpData(run);
 
             // Decide which mode this popup is in
-            bool canClaim = _svc.CanClaim();
             bool canExtend = _svc.CanExtend1H();
-            var state = _svc.State;
-
-            // Buttons visibility
-            View.SetClaimVisible(canClaim);
-            View.SetExtendVisible(canExtend);
 
             // View state
             bool playerReachGoal = run.Player.HasFinished;
+
             if (!playerReachGoal)
             {
                 if (canExtend)
                 {
-                    View.SetViewState(RaceEndPopupState.CanExtend);
+                    View.SetViewState(RaceEndPopupState.CanExtend, null);
+                    View.SetClaimVisible(false);
+                    View.SetExtendVisible(true);
                 }
                 else
                 {
-                    View.SetViewState(RaceEndPopupState.NoClaim);
-                    View.SetClaimVisible(true);
+                    // Time’s up & not finished: show lose/timeout layout, NO claim
+                    View.SetViewState(RaceEndPopupState.NoReward, null);
+                    View.SetClaimVisible(false);
                     View.SetExtendVisible(false);
                 }
                 return;
             }
 
-            if(run.FinalPlayerRank == 1)
+            View.SetClaimVisible(true);
+            View.SetExtendVisible(false);
+
+            if (run.FinalPlayerRank == 1)
             {
-                View.SetViewState(RaceEndPopupState.FirstPlace);
+                View.SetViewState(RaceEndPopupState.FirstPlace, new RewardData(_currentReward.Gold, _currentReward.Gems, _currentReward.Booster1, _currentReward.Booster2, _currentReward.Booster3,_currentReward.Booster4));
             }
             else
             {
-                View.SetViewState(RaceEndPopupState.NormalPlace);
+                View.SetViewState(RaceEndPopupState.NormalPlace, new RewardData(_currentReward.Gold, _currentReward.Gems, _currentReward.Booster1, _currentReward.Booster2, _currentReward.Booster3, _currentReward.Booster4));
             }
         }
 
@@ -198,7 +199,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void OpenLastChance()
         {
-            View.SetViewState(RaceEndPopupState.LastChance);
+            View.SetViewState(RaceEndPopupState.LastChance, null);
 
             var offer = _svc.GetExtendOffer();
 

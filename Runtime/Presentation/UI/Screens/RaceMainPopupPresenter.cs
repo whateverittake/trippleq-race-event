@@ -1,5 +1,6 @@
 ﻿using System;
 using TrippleQ.UiKit;
+using static TrippleQ.Event.RaceEvent.Runtime.PopupTypes;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
@@ -45,8 +46,16 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 return;
             }
 
+            _svc.NotifyPopupShown(PopupType.Main);
+
             View.InitData(_svc.CurrentRun);
             View.InitDataReward(_svc.GetRewardForRank(1),_svc.GetRewardForRank(2),_svc.GetRewardForRank(3));
+        }
+
+        protected override void OnAfterHide()
+        {
+            _svc.NotifyPopupHidden(PopupType.Main);
+            base.OnAfterHide();
         }
 
         public void Tick(float deltaTime)

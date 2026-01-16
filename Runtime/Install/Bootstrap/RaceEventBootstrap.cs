@@ -51,6 +51,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                                     pool);
 
                     OnServiceReady?.Invoke(_svc);
+
+                    _svc.SetTestMode(true);
                 }));
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -90,6 +92,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 isInTutorial: isInTutorial,
                 botPool: _pendingPool
             );
+
+            _svc.SetTestMode(false);
         }
 
         public void OnClaimRewardRace(Action<RaceReward> claimAction)

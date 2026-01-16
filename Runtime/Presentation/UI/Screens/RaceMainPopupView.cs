@@ -23,7 +23,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         // Button hook
         public void OnClickEndRace() => _onDebugEndRace?.Invoke();
-        public void OnQuitPopup() 
+        public void OnQuitPopup()
         {
             _onClose?.Invoke();
             _onCloseOptional?.Invoke();
@@ -33,7 +33,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         // IRaceMainPopupView
         public bool IsVisible => gameObject.activeSelf;
-        public void Show() => gameObject.SetActive(true);
+        public void Show()
+        {
+            gameObject.SetActive(true);
+        }
         public void Hide() => gameObject.SetActive(false);
 
         public void SetTitle(string title) { }     // optional, nếu popup có title text

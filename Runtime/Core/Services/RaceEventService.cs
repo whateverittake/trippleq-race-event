@@ -53,8 +53,37 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         /// </summary>
         public int CurrentLevel { get; private set; }
 
+        private PopupType? _currentPopupTypeOpen;
+
         // DEBUG ONLY: store last fakeUtc used by debug sim
         private long _debugFakeUtcSeconds;
+
+        // --------------------
+        // TEST MODE
+        // --------------------
+        // When enabled, all "Now" calls are driven by the device local clock
+        // (DateTimeOffset.Now / DateTime.Now). This lets QA change the device
+        // local time to fast-forward DailyEnd / Extend flows.
+        public bool IsInTestMode { get; private set; }
+
+        public void SetTestMode(bool enabled)
+        {
+            IsInTestMode = enabled;
+            Log($"TestMode={(enabled ? "ON" : "OFF")}");
+        }
+
+        private long NowUtcSeconds()
+        {
+            // Normal: strict UTC.
+            // Test: use device local clock (affected by changing local time).
+            return IsInTestMode
+                ? DateTimeOffset.Now.ToUnixTimeSeconds()
+                : DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        }
+
+        private DateTime NowLocal() => DateTime.Now;
+
+        private long NowLocalUnixSeconds() => DateTimeOffset.Now.ToUnixTimeSeconds();
 
         public RaceEventService()
         {
@@ -103,11 +132,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 PublishRunUpdated();
             }
 
-            CleanupExpiredRunIfNeeded(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            CleanupExpiredRunIfNeeded(NowUtcSeconds());
 
             CurrentLevel = initialLevel;
 
-            var utcNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var utcNow = NowUtcSeconds();
 
             if (_run == null)
             {
@@ -139,7 +168,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             Log($"Initialized. CurrentLevel={CurrentLevel}");
 
             // Update eligibility once on init
-            RefreshEligibility(isInTutorial, DateTime.Now);
+            RefreshEligibility(isInTutorial, NowLocal());
 
             PublishRunUpdated();
         }
@@ -210,7 +239,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             // snapshot result at claim time
             _run!.HasClaimed = true;
-            _run.ClaimedUtcSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            _run.ClaimedUtcSeconds = NowUtcSeconds();
             _run.ClaimedRank = _run.FinalPlayerRank;
             _run.ClaimedWinnerId = _run.WinnerId;
 
@@ -328,7 +357,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 RequestPopup(new PopupRequest(PopupType.Entry));
             }
 
-            var utcNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var utcNow = NowUtcSeconds();
             if (_run != null && State == RaceEventState.InRace)
             {
                 GhostBotSimulator.SimulateBots(_run, utcNow);
@@ -368,7 +397,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             if (_run != null && State == RaceEventState.InRace)
             {
-                var utcNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                var utcNow = NowUtcSeconds();
 
                 _run.Player.LevelsCompleted += 1;
                 _run.Player.LastUpdateUtcSeconds = utcNow;
@@ -418,10 +447,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // Min level gating
             if (CurrentLevel < ActiveConfigForRunOrCursor().MinPlayerLevel) return false;
 
-            Log("xx 8: " + isInTutorial);
+            //Log("xx 8: " + isInTutorial);
             // Cooldown gating (hours)
             if (IsInCooldown(localNow)) return false;
-            Log("xx 9: " + isInTutorial);
+            //Log("xx 9: " + isInTutorial);
             // Once per day gating (based on resetHourLocal)
             if (HasShownEntryInCurrentWindow(localNow)) return false;
 
@@ -495,12 +524,12 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _save.LastEntryShownWindowId = GetWindowId(localNow, ActiveConfigForRunOrCursor().ResetHourLocal);
 
             // Mark join time (local)
-            _save.LastJoinLocalUnixSeconds = DateTimeOffset.Now.ToUnixTimeSeconds();
+            _save.LastJoinLocalUnixSeconds = NowLocalUnixSeconds();
 
             // Transition
             _sm.SetState(RaceEventState.Searching);
             _save.LastFlowState = RaceEventState.Searching;
-            _save.SearchingStartUtcSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            _save.SearchingStartUtcSeconds = NowUtcSeconds();
 
             // Ask UI to show searching popup
             _currentSearchingPlan = new SearchingPlan(ActiveConfigForRunOrCursor().SearchingDurationSeconds);
@@ -593,9 +622,13 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _save.LastFlowState = RaceEventState.InRace;
 
             // Create run NOW
-            var utcNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var utcNow = NowUtcSeconds();
             var startUtc = utcNow;
-            var endUtc = utcNow + (long)TimeSpan.FromHours(ActiveConfigForRunOrCursor().DurationHours).TotalSeconds;
+
+            var localNow = NowLocal();
+            var dailyEndLocal = GetNextResetLocal(localNow); // theo config
+            var endUtc = new DateTimeOffset(dailyEndLocal).ToUnixTimeSeconds();
+            //var endUtc = utcNow + (long)TimeSpan.FromHours(ActiveConfigForRunOrCursor().DurationHours).TotalSeconds;
             var cfgIndex = _save.ConfigCursor;
 
             _run = RaceRun.CreateNew(
@@ -711,7 +744,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // Chỉ simulate khi đang trong race (tuỳ bạn muốn Searching cũng sim hay không)
             if (State != RaceEventState.InRace) return;
 
-            var utcNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var utcNow = NowUtcSeconds();
             if (utcNow == _lastSimulatedUtc) return; // tránh double tick trong cùng 1 giây
             _lastSimulatedUtc = utcNow;
 
@@ -758,7 +791,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 _save.LastFlowState = RaceEventState.ExtendOffer;
                 TrySave();
 
-                //RequestPopup(new PopupRequest(PopupType.Ended)); // dùng Ended popup, đổi nút thành Extend/Claimed tuỳ state
+                if (IsPopupActive(PopupType.Main)|| IsPopupActive(PopupType.Info))
+                {
+                    RequestPopup(new PopupRequest(PopupType.Ended)); // dùng Ended popup, đổi nút thành Extend/Claimed tuỳ state
+                }
+
                 PublishRunUpdated();
                 Log("Time up -> ExtendOffer");
                 return;
@@ -787,7 +824,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             _sm.SetState(RaceEventState.Ended);
             _save.LastFlowState = RaceEventState.Ended;
-            //RequestPopup(new PopupRequest(PopupType.Ended));
+
+            if (IsPopupActive(PopupType.Main) || IsPopupActive(PopupType.Info))
+            {
+                RequestPopup(new PopupRequest(PopupType.Ended)); // dùng Ended popup, đổi nút thành Extend/Claimed tuỳ state
+            }
 
             PublishRunUpdated();
             Log($"Race finalized. Winner={_run.WinnerId}, PlayerRank={_run.FinalPlayerRank}");
@@ -815,7 +856,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // Chỉ cho decline khi đang offer
             if (State != RaceEventState.ExtendOffer) return;
 
-            var utcNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var utcNow = NowUtcSeconds();
 
             // Mark để FinalizeIfTimeUp không offer nữa
             _run.HasExtended = true; // trick: coi như đã "xử lý extend" để không offer lặp
@@ -848,7 +889,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 return;
             }
 
-            var utcNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var utcNow = NowUtcSeconds();
             var addSeconds = (long)TimeSpan.FromHours(ActiveConfigForRunOrCursor().ExtendHours).TotalSeconds;
 
             // nếu muốn tính từ end cũ: _run.EndUtcSeconds + addSeconds
@@ -861,7 +902,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _run.HasExtended = true;
             _run.ExtendedEndUtcSeconds = newEnd;
             _run.EndUtcSeconds = newEnd;
-
+            _debugFakeUtcSeconds = 0;
             _save.CurrentRun = _run;
 
             _sm.SetState(RaceEventState.InRace);
@@ -911,7 +952,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 // and if expired -> hide (your requirement)
                 if (_run.HasExtended)
                 {
-                    var nowUtc = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    var nowUtc = NowUtcSeconds();
                     var remainingSec = _run.EndUtcSeconds - nowUtc;
 
                     if (remainingSec <= 0)
@@ -1015,7 +1056,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 return;
             }
 
-            var utcNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var utcNow = NowUtcSeconds();
             Log($"[DEBUG] Force End. Before: EndUtc={_run.EndUtcSeconds}, utcNow={utcNow}");
 
             // Force end time to now
@@ -1305,7 +1346,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             if (start <= 0) return new SearchingPlan(total);
 
-            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var now = NowUtcSeconds();
             var elapsed = (int)System.Math.Max(0, now - start);
             var remaining = System.Math.Max(0, total - elapsed);
             return new SearchingPlan(remaining);
@@ -1333,6 +1374,55 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             return $"{h}h{m:00}'";
         }
 
+
+        public LeaderboardSnapshot GetLeaderboardSnapshot(int topN)
+        {
+            ThrowIfNotInitialized();
+            if (_run == null) return LeaderboardSnapshot.Empty();
+
+            // 1) lấy standings theo cùng 1 rule duy nhất
+            // nếu RaceStandings.Compute đã sort đúng theo rule finishUtc / progress thì dùng lại luôn
+            var standings = RaceStandings.Compute(_run.AllParticipants(), _run.GoalLevels);
+
+            // 2) lấy rank player
+            int playerRank = standings.FindIndex(p => p.Id == _run.Player.Id) + 1;
+            if (playerRank <= 0) playerRank = standings.Count;
+
+            // 3) topN
+            var top = standings.Count <= topN ? standings : standings.GetRange(0, topN);
+
+            return new LeaderboardSnapshot(top, playerRank, _run.Player.HasFinished);
+        }
+
+        public string ExtractNumberSuffix(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return string.Empty;
+
+            int i = input.Length - 1;
+            while (i >= 0 && char.IsDigit(input[i]))
+                i--;
+
+            return input.Substring(i + 1);
+        }
+
+        public void NotifyPopupShown(PopupType type)
+        {
+            _currentPopupTypeOpen = type;
+        }
+
+        public void NotifyPopupHidden(PopupType type)
+        {
+            if (_currentPopupTypeOpen == type)
+                _currentPopupTypeOpen = null;
+        }
+
+        private bool IsPopupActive(PopupType type)
+        {
+            return _currentPopupTypeOpen == type;
+        }
+
+        #region DEBUG
         /// <summary>
         /// DEBUG ONLY:
         /// Advance bots by exactly one logical step (≈ +1 level for active bots).
@@ -1343,7 +1433,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             ThrowIfNotInitialized();
             if (_run == null) { Log("[DEBUG] AdvanceBots ignored (no run)."); return; }
 
-            var utcNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var utcNow = NowUtcSeconds();
 
             // baseUtc = mốc mới nhất trong run (để cộng dồn đúng)
             long baseUtc = utcNow;
@@ -1426,7 +1516,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             }
 
             // baseUtc = mốc mới nhất để tránh time đi lùi
-            long baseUtc = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            long baseUtc = NowUtcSeconds();
             baseUtc = Math.Max(baseUtc, bot.LastUpdateUtcSeconds);
             baseUtc = Math.Max(baseUtc, _run.Player.LastUpdateUtcSeconds);
 
@@ -1478,7 +1568,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 return;
             }
 
-            var nowUtc = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var nowUtc = NowUtcSeconds();
 
             // Base time: mốc mới nhất giữa now / player / bots
             long baseUtc = nowUtc;
@@ -1589,7 +1679,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             // if never used fakeUtc yet, fallback to real utcNow
             long utcNow = (_debugFakeUtcSeconds > 0) ? _debugFakeUtcSeconds
-                                                     : DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                                                     : NowUtcSeconds();
 
             _run.Player.LevelsCompleted += 1;
             _run.Player.LastUpdateUtcSeconds = utcNow;
@@ -1610,37 +1700,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             FinalizeIfTimeUp(utcNow);
         }
 
-
-        public LeaderboardSnapshot GetLeaderboardSnapshot(int topN)
-        {
-            ThrowIfNotInitialized();
-            if (_run == null) return LeaderboardSnapshot.Empty();
-
-            // 1) lấy standings theo cùng 1 rule duy nhất
-            // nếu RaceStandings.Compute đã sort đúng theo rule finishUtc / progress thì dùng lại luôn
-            var standings = RaceStandings.Compute(_run.AllParticipants(), _run.GoalLevels);
-
-            // 2) lấy rank player
-            int playerRank = standings.FindIndex(p => p.Id == _run.Player.Id) + 1;
-            if (playerRank <= 0) playerRank = standings.Count;
-
-            // 3) topN
-            var top = standings.Count <= topN ? standings : standings.GetRange(0, topN);
-
-            return new LeaderboardSnapshot(top, playerRank, _run.Player.HasFinished);
-        }
-
-        public string ExtractNumberSuffix(string input)
-        {
-            if (string.IsNullOrEmpty(input))
-                return string.Empty;
-
-            int i = input.Length - 1;
-            while (i >= 0 && char.IsDigit(input[i]))
-                i--;
-
-            return input.Substring(i + 1);
-        }
+        #endregion
     }
 
     public readonly struct LeaderboardSnapshot

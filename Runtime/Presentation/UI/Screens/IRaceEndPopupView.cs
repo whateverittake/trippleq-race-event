@@ -19,11 +19,12 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         NoClaim,
         LastChance,
         CanExtend,
+        NoReward
     }
 
     public interface IRaceEndPopupView : ITrippleQPopupView
     {
-        void SetViewState(RaceEndPopupState state);
+        void SetViewState(RaceEndPopupState state, RewardData reward);
         void SetClaimVisible(bool visible);
         void SetExtendVisible(bool extendVisible);
         void SetOnClose(Action onClick);
