@@ -962,7 +962,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             //        unlockAtLevel: unlockLevel
             //    );
             //}
-            Log("xx 2");
+            Log("xx 2: "+ State);
             // If ended & can claim => show claim attention (not sleeping)
             if (State == RaceEventState.Ended && CanClaim())
                 return new RaceHudStatus(true, false, true, TimeSpan.Zero, "Claim now!", false);
