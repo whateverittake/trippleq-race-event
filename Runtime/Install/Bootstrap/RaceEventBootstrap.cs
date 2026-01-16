@@ -154,6 +154,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void Update()
         {
+            if (_svc == null) return;
             if(_svc.IsInitialized) _svc.Tick(Time.deltaTime);
 
             if (Input.GetKeyDown(KeyCode.P)) // debug
