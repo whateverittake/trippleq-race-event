@@ -933,9 +933,35 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             ThrowIfNotInitialized();
 
+            var cfg = ActiveConfigForRunOrCursor();
+
             // if feature off -> hide
-            if (!ActiveConfigForRunOrCursor().Enabled)
+            if (!cfg.Enabled)
                 return new RaceHudStatus(false, false, false, TimeSpan.Zero, "Next: ", false);
+
+            //HUD preview lock window ---
+            const int previewOffset = 5;
+            int unlockLevel = Math.Max(0, cfg.MinPlayerLevel);
+            int showPreviewLevel = Math.Max(0, unlockLevel - previewOffset);
+
+            // before preview => hide widget
+            if (CurrentLevel < showPreviewLevel)
+                return new RaceHudStatus(false, false, false, TimeSpan.Zero, "", false);
+
+            // preview but locked
+            if (CurrentLevel < unlockLevel)
+            {
+                return new RaceHudStatus(
+                    isVisible: true,
+                    isSleeping: true,          // dùng icon xám/sleeping state
+                    hasClaim: false,
+                    remaining: TimeSpan.Zero,
+                    label: $"Open in Level {unlockLevel}",
+                    showTextCountdown: false,
+                    isLocked: true,
+                    unlockAtLevel: unlockLevel
+                );
+            }
 
             // If ended & can claim => show claim attention (not sleeping)
             if (State == RaceEventState.Ended && CanClaim())
@@ -1017,6 +1043,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public RaceHudClickAction GetHudClickAction(bool isInTutorial, DateTime localNow)
         {
             ThrowIfNotInitialized();
+
+            var hud = GetHudStatus(localNow);
+            if (hud.IsLocked) return RaceHudClickAction.None;
 
             if (State == RaceEventState.Ended && CanClaim())
                 return RaceHudClickAction.OpenEnded;
@@ -1728,7 +1757,14 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public readonly string Label;        // optional: "NEXT RACE"
         public readonly bool ShowTextCountdown;
 
+        public readonly bool IsLocked;
+        public readonly int UnlockAtLevel;
+
         public RaceHudStatus(bool isVisible, bool isSleeping, bool hasClaim, TimeSpan remaining, string label, bool showTextCountdown)
+         : this(isVisible, isSleeping, hasClaim, remaining, label, showTextCountdown, isLocked: false, unlockAtLevel: 0) { }
+
+        public RaceHudStatus(bool isVisible, bool isSleeping, bool hasClaim, TimeSpan remaining, string label, bool showTextCountdown,
+                        bool isLocked, int unlockAtLevel)
         {
             IsVisible = isVisible;
             IsSleeping = isSleeping;
@@ -1736,6 +1772,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             Remaining = remaining;
             Label = label;
             ShowTextCountdown = showTextCountdown;
+
+            IsLocked = isLocked;
+            UnlockAtLevel = unlockAtLevel;
         }
     }
 
