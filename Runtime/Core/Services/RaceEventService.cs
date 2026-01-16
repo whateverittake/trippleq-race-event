@@ -389,17 +389,14 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             RefreshEligibility(isInTutorial, localNow);
 
-            //// Optional: show entry right after win if eligible (tweak later)
-            //if (ShouldShowEntryPopup(isInTutorial, localNow))
-            //{
-            //    //RequestPopup(new PopupRequest(PopupType.Entry));
-            //}
+            var max = ActiveConfigForRunOrCursor().GoalLevels;
 
             if (_run != null && State == RaceEventState.InRace)
             {
                 var utcNow = NowUtcSeconds();
 
                 _run.Player.LevelsCompleted += 1;
+                _run.Player.LevelsCompleted = Math.Max(_run.Player.LevelsCompleted, max);
                 _run.Player.LastUpdateUtcSeconds = utcNow;
 
                 if (!_run.Player.HasFinished && _run.Player.LevelsCompleted >= _run.GoalLevels)
@@ -417,13 +414,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 _save.CurrentRun = _run;
                 TrySave();
                 PublishRunUpdated();
-
-                //// End condition MVP: player reaches goal -> Ended/Claimable
-                //if (_run.HasPlayerReachedGoal())
-                //{
-                //    _sm.SetState(RaceEventState.Ended);
-                //    RequestPopup(new PopupRequest(PopupType.Ended));
-                //}
 
                 // NOTE: no early end here
                 FinalizeIfTimeUp(utcNow);
