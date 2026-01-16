@@ -952,7 +952,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                     isSleeping: true,          // dùng icon xám/sleeping state
                     hasClaim: false,
                     remaining: TimeSpan.Zero,
-                    label: $"Open in Level {unlockLevel}",
+                    label: $"Lvl {unlockLevel}",
                     showTextCountdown: false,
                     isLocked: true,
                     unlockAtLevel: unlockLevel
