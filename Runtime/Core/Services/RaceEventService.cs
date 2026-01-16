@@ -1061,6 +1061,27 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             return RaceHudClickAction.None;
         }
+
+        public void ClearCurrentRun()
+        {
+            ThrowIfNotInitialized();
+
+            if (_run == null)
+                return;
+
+            Log("[RaceEvent] ClearCurrentRun");
+
+            // 1. clear runtime
+            _run = null;
+
+            // 2. reset flow/state
+            _sm.SetState(RaceEventState.Idle);
+            _save.LastFlowState = RaceEventState.Idle;
+
+            // 3. persist
+            TrySave();
+        }
+
         #endregion
 
         /// <summary>

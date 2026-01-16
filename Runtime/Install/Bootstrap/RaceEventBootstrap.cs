@@ -131,6 +131,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _svc.Debug_AdvanceSingleBot(index);
         }
 
+        public void ClearCurrentRun()
+        {
+            _svc.ClearCurrentRun();
+        }
+
         private void Update()
         {
             if(_svc.IsInitialized) _svc.Tick(Time.deltaTime);
@@ -164,6 +169,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             if (Input.GetKeyDown(KeyCode.M))
             {
                 DebugWinLevel();
+            }
+
+            if (Input.GetKeyDown(KeyCode.C))
+            {
+                ClearCurrentRun();
             }
         }
 
