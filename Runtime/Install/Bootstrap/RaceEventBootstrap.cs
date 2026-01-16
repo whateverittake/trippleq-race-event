@@ -8,6 +8,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     {
         [SerializeField] List<RaceEventConfigSO> _configSOs;
         [SerializeField] bool _isInDev=false;
+        [SerializeField] bool _autoInit=false;
 
         private RaceEventService _svc;
 
@@ -24,15 +25,32 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private Action<int, Action<bool>> _boundSpendGoldHandler;
         private Action _boundNotEnoughCoinHandler;
 
+        private int _levelTestMod = 30;
+        private List<RaceEventConfig> runtimeConfigs= new List<RaceEventConfig>();
+        private JsonRaceStorage storage;
+
         private void Awake()
         {
+            if (_autoInit)
+            {
+                StartInitRaceService();
+            }
+        }
+
+        public void SetLevelTestMode(int level)
+        {
+            _levelTestMod = level;
+        }
+
+        public void StartInitRaceService()
+        {
             var kv = new FileKeyValueStorage("TrippleQ.RaceEvent.Save");
-            var storage = new JsonRaceStorage(kv);
+            storage = new JsonRaceStorage(kv);
 
             _svc = new RaceEventService();
             _svc.OnLog += Debug.Log;
 
-            var runtimeConfigs = new List<RaceEventConfig>(_configSOs.Count);
+            runtimeConfigs = new List<RaceEventConfig>(_configSOs.Count);
             for (int i = 0; i < _configSOs.Count; i++)
             {
                 var so = _configSOs[i];
@@ -46,7 +64,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 {
                     _svc.Initialize(configs: runtimeConfigs,
                                     storage: storage,
-                                    initialLevel: 30,
+                                    initialLevel: _levelTestMod,
                                     isInTutorial: false,
                                     pool);
 
