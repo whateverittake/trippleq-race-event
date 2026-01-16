@@ -437,23 +437,29 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public bool ShouldShowEntryPopup(bool isInTutorial, DateTime localNow)
         {
             ThrowIfNotInitialized();
+            Log("xx 1: " + "ShouldShowEntryPopup");
             // Do not show when already in race flow
             if (State == RaceEventState.Searching || State == RaceEventState.InRace)
                 return false;
             // Feature gating
+            Log("xx 2: " + "ShouldShowEntryPopup");
             if (!ActiveConfigForRunOrCursor().Enabled) return false;
             // Tutorial gating
+            Log("xx 3: " + "ShouldShowEntryPopup");
             if (ActiveConfigForRunOrCursor().BlockDuringTutorial && isInTutorial) return false;
             // Min level gating
+            Log("xx 4: " + "ShouldShowEntryPopup");
             if (CurrentLevel < ActiveConfigForRunOrCursor().MinPlayerLevel) return false;
 
             //Log("xx 8: " + isInTutorial);
             // Cooldown gating (hours)
+            Log("xx 5: " + "ShouldShowEntryPopup");
             if (IsInCooldown(localNow)) return false;
             //Log("xx 9: " + isInTutorial);
             // Once per day gating (based on resetHourLocal)
+            Log("xx 6: " + "ShouldShowEntryPopup");
             if (HasShownEntryInCurrentWindow(localNow)) return false;
-
+            Log("xx 7: " + "ShouldShowEntryPopup");
             return true;
         }
 
@@ -934,7 +940,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             ThrowIfNotInitialized();
 
             var cfg = ActiveConfigForRunOrCursor();
-            Log("xx 1");
+            //Log("xx 1");
             // if feature off -> hide
             if (!cfg.Enabled)
                 return new RaceHudStatus(false, false, false, TimeSpan.Zero, "Next: ", false);
@@ -962,11 +968,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             //        unlockAtLevel: unlockLevel
             //    );
             //}
-            Log("xx 2: "+ State);
+            //Log("xx 2: "+ State);
             // If ended & can claim => show claim attention (not sleeping)
             if (State == RaceEventState.Ended && CanClaim())
                 return new RaceHudStatus(true, false, true, TimeSpan.Zero, "Claim now!", false);
-            Log("xx 3");
+            //Log("xx 3");
             // If in race -> hide widget (hoặc show active icon)
             if (State == RaceEventState.InRace || State == RaceEventState.Searching)
             {
@@ -995,7 +1001,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
                 return new RaceHudStatus(true, false, false, remaining2, "End in: ", true);
             }
-            Log("xx 4");
+            //Log("xx 4");
             // Otherwise: idle/eligible -> if eligible you may show active icon, if not eligible show sleeping + countdown
             var canShowEntry = ShouldShowEntryPopup(isInTutorial: false, localNow); // HUD không biết tutorial thì bạn có thể truyền vào overload khác
             if (canShowEntry)
@@ -1003,7 +1009,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 // active state: no countdown
                 return new RaceHudStatus(true, false, false, TimeSpan.Zero, "Race now!", false);
             }
-            Log("xx 5");
+            //Log("xx 5");
             var nextReset3 = GetNextResetLocal(localNow);
             var remaining3 = nextReset3 - localNow;
             if (remaining3 < TimeSpan.Zero) remaining3 = TimeSpan.Zero;
@@ -1044,22 +1050,30 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             ThrowIfNotInitialized();
 
-            var hud = GetHudStatus(localNow);
-            if (hud.IsLocked) return RaceHudClickAction.None;
+            return GetHudMode(isInTutorial, localNow) switch
+            {
+                HudMode.Claim => RaceHudClickAction.OpenEnded,
+                HudMode.InRace => RaceHudClickAction.OpenInRace,
+                HudMode.Entry => RaceHudClickAction.OpenEntry,
+                _ => RaceHudClickAction.None
+            };
 
-            if (State == RaceEventState.Ended && CanClaim())
-                return RaceHudClickAction.OpenEnded;
+            //var hud = GetHudStatus(localNow);
+            //if (hud.IsLocked) return RaceHudClickAction.None;
 
-            if (State == RaceEventState.InRace)
-                return RaceHudClickAction.OpenInRace;
+            //if (State == RaceEventState.Ended && CanClaim())
+            //    return RaceHudClickAction.OpenEnded;
 
-            if(State == RaceEventState.ExtendOffer)
-                return RaceHudClickAction.OpenEnded;
+            //if (State == RaceEventState.InRace)
+            //    return RaceHudClickAction.OpenInRace;
 
-            if (ShouldShowEntryPopup(isInTutorial, localNow))
-                return RaceHudClickAction.OpenEntry;
+            //if(State == RaceEventState.ExtendOffer)
+            //    return RaceHudClickAction.OpenEnded;
 
-            return RaceHudClickAction.None;
+            //if (ShouldShowEntryPopup(isInTutorial, localNow))
+            //    return RaceHudClickAction.OpenEntry;
+
+            //return RaceHudClickAction.None;
         }
 
         public void ClearCurrentRun()
@@ -1781,6 +1795,31 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         }
 
         #endregion
+
+        private HudMode GetHudMode(bool isInTutorial, DateTime localNow)
+        {
+            var hud = GetHudStatus(localNow);
+
+            // 1) HUD-driven first
+            if (!hud.IsVisible) return HudMode.Hidden;
+            if (hud.IsLocked) return HudMode.Locked;
+
+            // 2) State overrides (business meaning)
+            if (State == RaceEventState.Ended && CanClaim())
+                return HudMode.Claim;
+
+            if (State == RaceEventState.ExtendOffer)
+                return HudMode.Claim;
+
+            if (State == RaceEventState.InRace)
+                return HudMode.InRace;
+
+            // 3) Entry gate (Idle/others)
+            if (ShouldShowEntryPopup(isInTutorial, localNow))
+                return HudMode.Entry;
+
+            return HudMode.Sleeping;
+        }
     }
 
     public readonly struct LeaderboardSnapshot
@@ -1835,5 +1874,15 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         OpenEntry,
         OpenInRace,
         OpenEnded
+    }
+
+    public enum HudMode
+    {
+        Hidden,
+        Locked,
+        Claim,       // ended & can claim OR extend offer
+        InRace,
+        Entry,
+        Sleeping     // next in / nothing to do
     }
 }
