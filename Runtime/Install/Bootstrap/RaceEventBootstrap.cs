@@ -46,7 +46,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 {
                     _svc.Initialize(configs: runtimeConfigs,
                                     storage: storage,
-                                    initialLevel: 10,
+                                    initialLevel: 30,
                                     isInTutorial: false,
                                     pool);
 
