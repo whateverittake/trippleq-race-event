@@ -85,7 +85,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             }
             int max = goalLevels;
             bot.LevelsCompleted += gained;
-            bot.LevelsCompleted = Math.Max(bot.LevelsCompleted, max);
+            bot.LevelsCompleted = Math.Min(bot.LevelsCompleted, max);
             bot.LastUpdateUtcSeconds = utcNow;
 
             if (!bot.HasFinished && bot.LevelsCompleted >= goalLevels)

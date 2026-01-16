@@ -396,7 +396,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 var utcNow = NowUtcSeconds();
 
                 _run.Player.LevelsCompleted += 1;
-                _run.Player.LevelsCompleted = Math.Max(_run.Player.LevelsCompleted, max);
+                _run.Player.LevelsCompleted = Math.Min(_run.Player.LevelsCompleted, max);
                 _run.Player.LastUpdateUtcSeconds = utcNow;
 
                 if (!_run.Player.HasFinished && _run.Player.LevelsCompleted >= _run.GoalLevels)
@@ -427,29 +427,29 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public bool ShouldShowEntryPopup(bool isInTutorial, DateTime localNow)
         {
             ThrowIfNotInitialized();
-            Log("xx 1: " + "ShouldShowEntryPopup");
+           // Log("xx 1: " + "ShouldShowEntryPopup");
             // Do not show when already in race flow
             if (State == RaceEventState.Searching || State == RaceEventState.InRace)
                 return false;
             // Feature gating
-            Log("xx 2: " + "ShouldShowEntryPopup");
+           // Log("xx 2: " + "ShouldShowEntryPopup");
             if (!ActiveConfigForRunOrCursor().Enabled) return false;
             // Tutorial gating
-            Log("xx 3: " + "ShouldShowEntryPopup");
+           // Log("xx 3: " + "ShouldShowEntryPopup");
             if (ActiveConfigForRunOrCursor().BlockDuringTutorial && isInTutorial) return false;
             // Min level gating
-            Log("xx 4: " + "ShouldShowEntryPopup: "+ CurrentLevel+"/"+ ActiveConfigForRunOrCursor().MinPlayerLevel);
+           // Log("xx 4: " + "ShouldShowEntryPopup: "+ CurrentLevel+"/"+ ActiveConfigForRunOrCursor().MinPlayerLevel);
             if (CurrentLevel < ActiveConfigForRunOrCursor().MinPlayerLevel) return false;
 
             //Log("xx 8: " + isInTutorial);
             // Cooldown gating (hours)
-            Log("xx 5: " + "ShouldShowEntryPopup");
+           // Log("xx 5: " + "ShouldShowEntryPopup");
             if (IsInCooldown(localNow)) return false;
             //Log("xx 9: " + isInTutorial);
             // Once per day gating (based on resetHourLocal)
-            Log("xx 6: " + "ShouldShowEntryPopup");
+           // Log("xx 6: " + "ShouldShowEntryPopup");
             if (HasShownEntryInCurrentWindow(localNow)) return false;
-            Log("xx 7: " + "ShouldShowEntryPopup");
+            //Log("xx 7: " + "ShouldShowEntryPopup");
             return true;
         }
 
