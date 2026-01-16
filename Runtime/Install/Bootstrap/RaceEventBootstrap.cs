@@ -261,5 +261,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             _svc.ForceRequestEntryPopup(false,DateTime.UtcNow);
         }
+
+        public bool IsInTestMode()
+        {
+            return _isInDev;
+        }
     }
 }
