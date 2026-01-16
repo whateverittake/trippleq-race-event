@@ -448,7 +448,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             Log("xx 3: " + "ShouldShowEntryPopup");
             if (ActiveConfigForRunOrCursor().BlockDuringTutorial && isInTutorial) return false;
             // Min level gating
-            Log("xx 4: " + "ShouldShowEntryPopup");
+            Log("xx 4: " + "ShouldShowEntryPopup: "+ CurrentLevel+"/"+ ActiveConfigForRunOrCursor().MinPlayerLevel);
             if (CurrentLevel < ActiveConfigForRunOrCursor().MinPlayerLevel) return false;
 
             //Log("xx 8: " + isInTutorial);
