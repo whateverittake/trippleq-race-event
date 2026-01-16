@@ -133,7 +133,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 {
                     _baloon.transform.SetParent(_defaultStartStep.transform, false);
                     _baloon.transform.localPosition = Vector3.zero;
-                    _baloon.gameObject.SetActive(false);
                 }
             }
             else
@@ -142,11 +141,12 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 var stepObj = _listStepUse[stepIdx];
                 if (stepObj != null)
                 {
-                    _baloon.gameObject.SetActive(true);
                     _baloon.transform.SetParent(stepObj.transform, false);
                     _baloon.transform.localPosition = Vector3.zero;
                 }
             }
+
+            _baloon.gameObject.SetActive(true);
         }
 
         private void SetUpStep(int maxCount)
