@@ -27,6 +27,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             View.SetOnCloseToOpenExtendView(OpenLastChance);
             View.SetOnCloseWithoutExtend(OnCloseWithoutExtend);
             View.SetOnWatchAds(OnWatchAds);
+            View.SetOnAcceptNoReward(OnAcceptNoReward);
 
             _svc.OnStateChanged += OnStateChanged;
             _svc.OnRunUpdated += OnRunUpdated;
@@ -43,8 +44,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             View.SetClose(null);
             View.SetOnClaim(null);
             View.SetOnExtend(null);
+            View.SetOnAcceptNoReward(null);
             View.SetOnCloseToOpenExtendView(null);
             View.SetOnCloseWithoutExtend(null);
+            View.SetOnWatchAds(null);
         }
 
         private void OnStateChanged(RaceEventState a, RaceEventState b) => Render();
@@ -195,6 +198,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private void OnCloseWithoutExtend()
         {
             _svc.DeclineExtend();
+        }
+
+        private void OnAcceptNoReward()
+        {
+            Hide();
         }
 
         private void OpenLastChance()

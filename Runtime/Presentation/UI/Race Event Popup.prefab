@@ -5215,7 +5215,7 @@ MonoBehaviour:
       - m_Target: {fileID: 1925356579291752852}
         m_TargetAssemblyTypeName: TrippleQ.Event.RaceEvent.Runtime.RaceEndPopupView,
           TrippleQ.Event.RaceEvent
-        m_MethodName: OnQuitPopup
+        m_MethodName: OnAcceptNoRewardClick
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -7825,7 +7825,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &5314648658809553573
 RectTransform:
   m_ObjectHideFlags: 0

@@ -58,6 +58,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private Action _onCloseWithoutExtend;
         private Action _onWatchAds;
         private Action _onCloseOptional;
+        private Action _onAcceptNoReward;
 
         private IReadOnlyList<RaceParticipant> _racer;
         private int _playerRank = 1;
@@ -88,6 +89,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void OnExtendRaceClick() => _onExtend?.Invoke();
 
         public void OnWatchAdsClick()=> _onWatchAds?.Invoke();
+
+        public void OnAcceptNoRewardClick() => _onAcceptNoReward?.Invoke();
 
         // ===== IRaceEndPopupView =====
 
@@ -123,6 +126,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void SetOnClose(Action onClick) => _onClose = onClick;
         public void SetOnClaim(Action onClick) => _onClaim = onClick;
         public void SetOnExtend(Action onClick) => _onExtend = onClick;
+
+        public void SetOnAcceptNoReward(Action onClick) => _onAcceptNoReward = onClick;
 
         public void SetCloseOptional(Action onClick)
         {

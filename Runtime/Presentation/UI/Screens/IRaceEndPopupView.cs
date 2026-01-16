@@ -31,6 +31,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         void SetOnClaim(Action onClick);
         void SetOnExtend(Action onClick);
 
+        void SetOnAcceptNoReward(Action onClick);
+
         void SetOnCloseToOpenExtendView(Action onClick);
 
         void SetOnCloseWithoutExtend(Action onClick);
