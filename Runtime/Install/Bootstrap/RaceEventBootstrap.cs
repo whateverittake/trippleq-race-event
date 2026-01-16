@@ -106,7 +106,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         public void CheatResetRace()
         {
-            _svc.Debug_ResetAfterClaimAndAllowNewRun();
+            _svc.Debug_ForceClearAll();
         }
 
         public void CheatPlusBot()

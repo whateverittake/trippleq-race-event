@@ -1147,6 +1147,36 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             PublishRunUpdated(); // notify UI to clear standings
         }
 
+        public void Debug_ForceClearAll()
+        {
+            ThrowIfNotInitialized();
+
+            Log("[DEBUG] FORCE CLEAR ALL RACE EVENT DATA");
+
+            // 1. Clear runtime
+            _run = null;
+
+            // 2. Clear save data liên quan run
+            _save.CurrentRun = null;
+            _save.LastFlowState = RaceEventState.Idle;
+
+            // 3. Reset state machine
+            _sm.SetState(RaceEventState.Idle);
+
+            // 4. Clear ALL gating / cooldown / window
+            _save.LastEntryShownWindowId = 0;
+            _save.LastJoinLocalUnixSeconds = 0;
+            _save.SearchingStartUtcSeconds = 0;
+
+            // 6. Persist
+            TrySave();
+
+            // 7. Notify UI / presenters
+            PublishRunUpdated();               // clear leaderboard, HUD
+
+            Log("[DEBUG] FORCE CLEAR DONE");
+        }
+
         private static void NormalizeComposition(ref RaceBotComposition comp, int need)
         {
             // nếu GD set tổng khác need: ưu tiên giữ Boss/Normal, phần còn lại đổ vào Noob
