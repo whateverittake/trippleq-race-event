@@ -168,5 +168,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 }
             }
         }
+
+        public object GetAvatarRect()
+        {
+            return _avatarItemView;
+        }
     }
 }

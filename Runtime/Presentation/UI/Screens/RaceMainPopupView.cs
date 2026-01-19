@@ -15,6 +15,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         [SerializeField] RaceTrackController _userTrack;
         [SerializeField] RaceTrackController[] _opponentTracks;
         [SerializeField] ChestTooltipHook[] _chestTooltipHooks;
+        [SerializeField] RectTransform _infoBtnRect;
 
         private Action _onDebugEndRace;
         private Action _onClose;
@@ -150,5 +151,23 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 }
             }
         }
+
+        #region TUT
+        public object GetRectForTutOne()
+        {
+            return _chestTooltipHooks[0];
+        }
+
+        public object GetRectForTutTwo()
+        {
+            return _userTrack.GetAvatarRect();
+        }
+
+        public object GetRectForTutThree()
+        {
+            return _infoBtnRect;
+        }
+
+        #endregion
     }
 }

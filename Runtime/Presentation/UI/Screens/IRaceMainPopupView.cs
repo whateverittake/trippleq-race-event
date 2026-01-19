@@ -19,5 +19,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         void InitDataReward(RaceReward firstRankReward, RaceReward secondRankReward, RaceReward thirdRankReward);
 
         void SetGoal(int goal);
+        object GetRectForTutOne();
+        object GetRectForTutTwo();
+        object GetRectForTutThree();
     }
 }

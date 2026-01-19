@@ -84,5 +84,19 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             _svc.OnEnterInfo();
         }
+
+        private object GetRectForTutOne()
+        {
+            return View.GetRectForTutOne();
+        }
+
+        private object GetRectForTutTwo()
+        {
+            return View.GetRectForTutTwo();
+        }
+        private object GetRectForTutThree() 
+        {
+            return View.GetRectForTutThree();
+        }
     }
 }
