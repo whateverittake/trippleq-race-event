@@ -577,10 +577,10 @@ MonoBehaviour:
   _handRect: {fileID: 7193592910391190171}
   _handOffset: {x: 80, y: -60}
   _handBobAmplitude: 10
-  _handBobSpeed: 2.5
+  _handBobSpeed: 1
   _showHand: 1
   _blinkText: 1
-  _blinkSpeed: 2.5
+  _blinkSpeed: 1
   _blinkMinAlpha: 0.55
   _holePadding: {x: 12, y: 12}
   _continuousSync: 1
