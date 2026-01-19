@@ -1514,7 +1514,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void NotifyPopupShown(PopupType type)
         {
             _currentPopupTypeOpen = type;
-
+            Log("[DEBUG] NotifyPopupShown.{type}");
             if (ConsumeFirstTimePopup(type))
             {
                 Log($"[Tutorial] First time popup shown: {type}");
