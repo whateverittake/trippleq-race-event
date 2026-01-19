@@ -407,6 +407,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                     Log(
                             $"[RACE][PLAYER FINISH] levels={_run.Player.LevelsCompleted}/{_run.GoalLevels} finishUtc={utcNow}"
                         );
+
+                    EndRaceNowAndFinalize();
+                    return;
                 }
 
                 GhostBotSimulator.SimulateBots(_run, utcNow);
@@ -828,6 +831,22 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             PublishRunUpdated();
             Log($"Race finalized. Winner={_run.WinnerId}, PlayerRank={_run.FinalPlayerRank}");
+        }
+
+        private void EndRaceNowAndFinalize()
+        {
+            if (_run == null) return;
+            if (State != RaceEventState.InRace) return;
+
+            var utcNow = NowUtcSeconds();
+
+            // ép end time = now để FinalizeIfTimeUp chạy
+            _run.EndUtcSeconds = utcNow;
+
+            // đảm bảo chưa finalize
+            _run.IsFinalized = false;
+
+            FinalizeIfTimeUp(utcNow);
         }
 
         public RaceReward GetRewardForRank(int rank)
@@ -1773,6 +1792,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 _run.Player.HasFinished = true;
                 _run.Player.FinishedUtcSeconds = utcNow;
                 UnityEngine.Debug.Log($"[RACE][PLAYER FINISH][FAKEUTC] levels={_run.Player.LevelsCompleted}/{_run.GoalLevels} finishUtc={utcNow}");
+
+                EndRaceNowAndFinalize();
+                return;
             }
 
             GhostBotSimulator.SimulateBots(_run, utcNow);
