@@ -21,6 +21,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         [SerializeField] GameObject _rewardObj;
         [SerializeField] GameObject[] _rewardIconArr;
 
+        [SerializeField] RectTransform _avatarRect;
+
         private List<GameObject> _listStepUse= null;
 
         public void SetUp(bool isUser)
@@ -169,9 +171,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             }
         }
 
-        public object GetAvatarRect()
+        public RectTransform GetAvatarRect()
         {
-            return _avatarItemView;
+            return _avatarRect;
         }
     }
 }

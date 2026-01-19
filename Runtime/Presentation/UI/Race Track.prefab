@@ -1796,6 +1796,7 @@ MonoBehaviour:
   - {fileID: 8846042506135621222}
   - {fileID: 2387416168093253475}
   - {fileID: 4133488003924660257}
+  _avatarRect: {fileID: 2703201545721790297}
 --- !u!1 &6303464878251891762
 GameObject:
   m_ObjectHideFlags: 0

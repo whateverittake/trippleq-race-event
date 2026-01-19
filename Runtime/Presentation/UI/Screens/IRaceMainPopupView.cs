@@ -1,5 +1,6 @@
 using System;
 using TrippleQ.UiKit;
+using UnityEngine;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
@@ -19,8 +20,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         void InitDataReward(RaceReward firstRankReward, RaceReward secondRankReward, RaceReward thirdRankReward);
 
         void SetGoal(int goal);
-        object GetRectForTutOne();
-        object GetRectForTutTwo();
-        object GetRectForTutThree();
+        RectTransform GetRectForTutOne();
+        RectTransform GetRectForTutTwo();
+        RectTransform GetRectForTutThree();
     }
 }

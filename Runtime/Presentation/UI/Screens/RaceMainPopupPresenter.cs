@@ -1,5 +1,6 @@
 ﻿using System;
 using TrippleQ.UiKit;
+using UnityEngine;
 using static TrippleQ.Event.RaceEvent.Runtime.PopupTypes;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
@@ -85,16 +86,16 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _svc.OnEnterInfo();
         }
 
-        public object GetRectForTutOne()
+        public RectTransform GetRectForTutOne()
         {
             return View.GetRectForTutOne();
         }
 
-        public object GetRectForTutTwo()
+        public RectTransform GetRectForTutTwo()
         {
             return View.GetRectForTutTwo();
         }
-        public object GetRectForTutThree() 
+        public RectTransform GetRectForTutThree() 
         {
             return View.GetRectForTutThree();
         }

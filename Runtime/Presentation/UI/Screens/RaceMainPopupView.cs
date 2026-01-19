@@ -153,17 +153,17 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         }
 
         #region TUT
-        public object GetRectForTutOne()
+        public RectTransform GetRectForTutOne()
         {
-            return _chestTooltipHooks[0];
+            return _chestTooltipHooks[0].GetTutRect(); ;
         }
 
-        public object GetRectForTutTwo()
+        public RectTransform GetRectForTutTwo()
         {
             return _userTrack.GetAvatarRect();
         }
 
-        public object GetRectForTutThree()
+        public RectTransform GetRectForTutThree()
         {
             return _infoBtnRect;
         }
