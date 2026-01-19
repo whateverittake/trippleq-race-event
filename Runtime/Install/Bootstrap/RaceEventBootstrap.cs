@@ -285,5 +285,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             return _isInDev;
         }
+
+
     }
 }

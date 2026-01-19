@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using TrippleQ.UiKit;
 using UnityEngine;
 using static TrippleQ.Event.RaceEvent.Runtime.PopupTypes;
@@ -51,6 +52,15 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             View.InitData(_svc.CurrentRun);
             View.InitDataReward(_svc.GetRewardForRank(1),_svc.GetRewardForRank(2),_svc.GetRewardForRank(3));
+
+            if (_svc.ConsumeFirstTimePopup(PopupType.Main))
+            {
+                View.PlayMainTutorial(
+                    View.GetRectForTutOne(),
+                    View.GetRectForTutTwo(),
+                    View.GetRectForTutThree()
+                );
+            }
         }
 
         protected override void OnAfterHide()
@@ -86,6 +96,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _svc.OnEnterInfo();
         }
 
+        #region SELF TUT
         public RectTransform GetRectForTutOne()
         {
             return View.GetRectForTutOne();
@@ -99,5 +110,39 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             return View.GetRectForTutThree();
         }
+
+        private void PlayRaceEventMainTut(RectTransform rect1, RectTransform rect2, RectTransform rect3)
+        {
+            // Guard
+            if (rect1 == null || rect2 == null || rect3 == null)
+                return;
+
+            var targets = new List<RectTransform> { rect1, rect2, rect3 };
+
+            //var steps = new List<TutorialStep>
+            //{
+            //    new TutorialStep(
+            //        id: "Step1",
+            //        description: "Tap a chest to see what rewards you can win!",
+            //        onEnter: () => _overlay.Show("Tap a chest to see what rewards you can win!", rect1),
+            //        onCompleted: null
+            //    ),
+            //    new TutorialStep(
+            //        id: "Step2",
+            //        description: "That’s you! Complete levels to score points and race ahead.",
+            //        onEnter: () => _overlay.Show("That’s you! Complete levels to score points and race ahead.", rect2),
+            //        onCompleted: null
+            //    ),
+            //    new TutorialStep(
+            //        id: "Step3", // ✅ FIX: không trùng Step2
+            //        description: "Curious? Tap here to check the event rules.",
+            //        onEnter: () => _overlay.Show("Curious? Tap here to check the event rules.", rect3),
+            //        onCompleted: null
+            //    )
+            //};
+            //Play(steps, targets);
+        }
+
+        #endregion
     }
 }

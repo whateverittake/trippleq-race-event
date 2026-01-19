@@ -16,6 +16,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         [SerializeField] RaceTrackController[] _opponentTracks;
         [SerializeField] ChestTooltipHook[] _chestTooltipHooks;
         [SerializeField] RectTransform _infoBtnRect;
+        [SerializeField] QuickTutorialOverlayView _quickTutorialOverlayView;
 
         private Action _onDebugEndRace;
         private Action _onClose;
@@ -155,7 +156,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         #region TUT
         public RectTransform GetRectForTutOne()
         {
-            return _chestTooltipHooks[0].GetTutRect(); ;
+            return _chestTooltipHooks[0].GetTutRect();
         }
 
         public RectTransform GetRectForTutTwo()
@@ -166,6 +167,19 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public RectTransform GetRectForTutThree()
         {
             return _infoBtnRect;
+        }
+
+        public void PlayMainTutorial(RectTransform r1, RectTransform r2, RectTransform r3)
+        {
+            var targets = new[] { r1, r2, r3 };
+            var texts = new[]
+            {
+                "Tap a chest to see what rewards you can win!",
+                "That’s you! Complete levels to score points and race ahead.",
+                "Curious? Tap here to check the event rules."
+            };
+
+            _quickTutorialOverlayView.Play(targets, texts);
         }
 
         #endregion

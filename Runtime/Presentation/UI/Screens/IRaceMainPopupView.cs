@@ -23,5 +23,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         RectTransform GetRectForTutOne();
         RectTransform GetRectForTutTwo();
         RectTransform GetRectForTutThree();
+        void PlayMainTutorial(RectTransform rectTransform1, RectTransform rectTransform2, RectTransform rectTransform3);
     }
 }
