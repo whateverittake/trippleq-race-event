@@ -1796,7 +1796,7 @@ MonoBehaviour:
   - {fileID: 8846042506135621222}
   - {fileID: 2387416168093253475}
   - {fileID: 4133488003924660257}
-  _avatarRect: {fileID: 2703201545721790297}
+  _avatarRect: {fileID: 1851353198735694210}
 --- !u!1 &6303464878251891762
 GameObject:
   m_ObjectHideFlags: 0
@@ -2940,6 +2940,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c533db51d7c5b1f4ebba23f2dbd998e1, type: 3}
+--- !u!224 &1851353198735694210 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 4429498685062202248, guid: c533db51d7c5b1f4ebba23f2dbd998e1, type: 3}
+  m_PrefabInstance: {fileID: 2650912059350178314}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &2703201545721790297 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 92989009199195475, guid: c533db51d7c5b1f4ebba23f2dbd998e1, type: 3}
