@@ -11,6 +11,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private float _accum;
 
+        public event Action OnClickLocked;
+
         public RaceEventHudWidgetPresenter(RaceEventService svc, RaceEventHudWidgetView view, Func<bool>? isInTutorial = null)
         {
             _svc = svc;
@@ -49,8 +51,17 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private void OnClick()
         {
             if (_isInTutorial()) return;
-
-            var action = _svc.GetHudClickAction(_isInTutorial(),DateTime.Now);
+            var now = DateTime.Now;
+            var action = _svc.GetHudClickAction(_isInTutorial(), now);
+            if (action == RaceHudClickAction.None)
+            {
+                var hud = _svc.GetHudStatus(now);
+                if (hud.IsLocked)
+                {
+                    OnClickLocked?.Invoke();
+                }
+                return;
+            }
 
             switch (action)
             {
@@ -68,7 +79,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                         DateTime.Now
                     );
                     break;
-
                 case RaceHudClickAction.None:
                 default:
                     Debug.Log("Not handle on click: " + action);

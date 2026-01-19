@@ -95,6 +95,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // HUD bind
             _hudPresenter = new RaceEventHudWidgetPresenter(_svc, _hudWidgetView, isInTutorial);
 
+            _hudPresenter.OnClickLocked += HandleHudLockedClick;
+
             _entryPresenter = new RaceEntryPopupPresenter(_svc, isInTutorial);
             _searchingPresenter= new RaceSearchingPopupPresenter(_svc);
             _mainPresenter = new RaceMainPopupPresenter(_svc, isInTutorial);
@@ -126,6 +128,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             _endPresenter = null;
 
+            if (_hudPresenter != null)
+            {
+                _hudPresenter.OnClickLocked -= HandleHudLockedClick;
+            }
             _hudPresenter?.Dispose();
             _hudPresenter = null;
 
@@ -272,6 +278,20 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private void HandleTutorialMainRaceEvent()
         {
             //show tut
+        }
+
+        private void HandleHudLockedClick()
+        {
+            var hud = _svc.GetHudStatus(DateTime.Now);
+
+            // Option A: toast nhẹ
+            //_bootstrap.ShowToast($"Unlocks at level {hud.UnlockAtLevel}");
+
+            // Option B: mở Info popup
+            // _svc.OnEnterInfo();
+
+            // Option C: analytics
+            // Analytics.Log("race_hud_click_locked", hud.UnlockAtLevel);
         }
     }
 }
