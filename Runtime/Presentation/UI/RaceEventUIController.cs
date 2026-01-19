@@ -83,6 +83,14 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // --- events ---
             _svc.OnPopupRequested += HandlePopup;
 
+            _svc.OnTutorialRequested += type =>
+            {
+                if (type == PopupType.Main)
+                {
+                    HandleTutorialMainRaceEvent();
+                }
+            };
+
             bool isInTutorial() => false; // TODO: hook tutorial check
             // HUD bind
             _hudPresenter = new RaceEventHudWidgetPresenter(_svc, _hudWidgetView, isInTutorial);
@@ -259,6 +267,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private void HandleNotEnoughCoins()
         {
             _bootstrap.OpenNotEnoughCoinUI();
+        }
+
+        private void HandleTutorialMainRaceEvent()
+        {
+            //show tut
         }
     }
 }

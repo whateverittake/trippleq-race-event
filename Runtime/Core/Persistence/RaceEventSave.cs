@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
@@ -25,6 +26,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public RaceEventState LastFlowState;
         public long SearchingStartUtcSeconds;
 
+        public List<int> SeenPopupTypes;
+
         public static RaceEventSave Empty()
         {
             return new RaceEventSave
@@ -34,7 +37,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 ConfigCursor = 0,
                 CurrentRun = null,
                 LastFlowState = RaceEventState.Idle,
-                SearchingStartUtcSeconds = 0
+                SearchingStartUtcSeconds = 0,
+                SeenPopupTypes = new List<int>()
             };
         }
     }

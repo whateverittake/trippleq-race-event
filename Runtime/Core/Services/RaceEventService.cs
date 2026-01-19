@@ -47,6 +47,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private SearchingPlan _currentSearchingPlan;
 
+        public event Action<PopupType>? OnTutorialRequested;
+
         /// <summary>
         /// Temporary level mirror (host passes values in).
         /// Later: we'll read from ProgressProvider.
@@ -1512,6 +1514,12 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void NotifyPopupShown(PopupType type)
         {
             _currentPopupTypeOpen = type;
+
+            if (ConsumeFirstTimePopup(type))
+            {
+                Log($"[Tutorial] First time popup shown: {type}");
+                OnTutorialRequested?.Invoke(type);
+            }
         }
 
         public void NotifyPopupHidden(PopupType type)
@@ -1831,6 +1839,23 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 return HudMode.Entry;
 
             return HudMode.Sleeping;
+        }
+
+        public bool ConsumeFirstTimePopup(PopupType type)
+        {
+            ThrowIfNotInitialized();
+
+            _save.SeenPopupTypes ??= new List<int>();
+
+            int key = (int)type;
+            for (int i = 0; i < _save.SeenPopupTypes.Count; i++)
+                if (_save.SeenPopupTypes[i] == key)
+                    return false;
+
+            // first time ever
+            _save.SeenPopupTypes.Add(key);
+            TrySave();
+            return true;
         }
     }
 
