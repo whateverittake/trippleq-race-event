@@ -30,7 +30,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             "You finished {0}. Better luck next time!"
         };
 
-        [SerializeField] GameObject _claimButton, _extendButton;
+        [SerializeField] GameObject _claimButton, _extendButton, _okBtn;
         [SerializeField] GameObject _rankView, _extendOfferView;
         [SerializeField] GameObject _lastChanceView;
         [SerializeField] GameObject _noRewardView;
@@ -109,6 +109,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             // 7. close view
             _onCloseOptional?.Invoke();
+            _okBtn.SetActive(true);
         }
 
         private IEnumerator PlayChestShake(float duration, float strength)
@@ -352,6 +353,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void SetClaimVisible(bool visible)
         {
             _claimButton?.SetActive(visible);
+            _okBtn?.SetActive(false);
         }
 
         public void SetExtendVisible(bool extendVisible)
