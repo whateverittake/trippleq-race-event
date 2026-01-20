@@ -7,6 +7,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     public class RaceEntryPopupView : MonoBehaviour, IRaceEntryPopupView
     {
         [SerializeField] AvatarItemView _avatar;
+        [SerializeField] RectTransform _playNowBtnRect;
+        [SerializeField] QuickTutorialOverlayView _quickTutorialOverlayView;
 
         private Action _onAgree;
         private Action _onClose;
@@ -42,6 +44,17 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void SetCloseOptional(Action onClick)
         {
             _onCloseOptional= onClick;
+        }
+
+        public void PlayEntryTutorial()
+        {
+            var targets = new[] { _playNowBtnRect };
+            var texts = new[]
+            {
+                "Tap Play Now to start racing.",
+            };
+
+            _quickTutorialOverlayView.Play(targets, texts);
         }
     }
 }

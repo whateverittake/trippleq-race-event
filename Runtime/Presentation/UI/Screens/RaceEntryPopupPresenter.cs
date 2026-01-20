@@ -1,6 +1,7 @@
 ﻿using System;
 using TrippleQ.UiKit;
 using UnityEngine;
+using static TrippleQ.Event.RaceEvent.Runtime.PopupTypes;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
@@ -13,6 +14,16 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             _svc = svc;
             _isInTutorial = isInTutorial ?? (() => false);
+        }
+
+        protected override void OnAfterShow()
+        {
+            base.OnAfterShow();
+
+            if (_svc.ConsumeFirstTimePopup(PopupType.Entry))
+            {
+                View.PlayEntryTutorial();
+            }
         }
 
         protected override void OnBind()
