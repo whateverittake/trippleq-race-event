@@ -85,12 +85,13 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private float _handT;
         private Vector2 _lastHoleCenter; // overlay local
 
+        private Camera _camUI;
         // Use correct UI camera if needed
         private Camera UICamera
         {
             get
             {
-                if (_rootCanvas == null) return null; // ScreenSpaceOverlay: OK
+                if (_rootCanvas == null) return GetComponentInParent<Camera>(); // ScreenSpaceOverlay: OK
                 if (_rootCanvas.renderMode == RenderMode.ScreenSpaceOverlay) return null;
                 return _rootCanvas.worldCamera;
             }
