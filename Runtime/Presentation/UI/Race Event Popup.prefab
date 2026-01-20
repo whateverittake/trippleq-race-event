@@ -8712,10 +8712,10 @@ MonoBehaviour:
   _titleImage: {fileID: 2467185346360805897}
   _desText: {fileID: 6377937163620644371}
   _chestIconClose:
-  - {fileID: 21300000, guid: 9d9f2114bf22d9a48bd6569b38f35132, type: 3}
-  - {fileID: 21300000, guid: 9023eb37c92984a46bdb328eb64f7f3b, type: 3}
-  - {fileID: 21300000, guid: d5498f9ea9250bc47bc906e92a632058, type: 3}
-  - {fileID: 21300000, guid: 059912c467036934c8bbc7199f823000, type: 3}
+  - {fileID: 21300000, guid: 73e04a4eba0cc1144898a9d0a05f2d91, type: 3}
+  - {fileID: 21300000, guid: 8825a73b86960cb40b589ae76086f5a4, type: 3}
+  - {fileID: 21300000, guid: da8ec7a9f5541a44f884ea2d78d20012, type: 3}
+  - {fileID: 21300000, guid: e2ac4aecfb8a4b64c9ee740bac32cab9, type: 3}
   _chestIconOpen:
   - {fileID: 21300000, guid: 9d9f2114bf22d9a48bd6569b38f35132, type: 3}
   - {fileID: 21300000, guid: 9023eb37c92984a46bdb328eb64f7f3b, type: 3}
