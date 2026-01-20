@@ -91,9 +91,24 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             get
             {
-                if (_rootCanvas == null) return GetComponentInParent<Camera>(); // ScreenSpaceOverlay: OK
-                if (_rootCanvas.renderMode == RenderMode.ScreenSpaceOverlay) return null;
-                return _rootCanvas.worldCamera;
+                // 1) Prefer canvas that actually contains this overlay
+                var canvas = _rootCanvas != null ? _rootCanvas : GetComponentInParent<Canvas>(true);
+                if (canvas != null)
+                {
+                    if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+                        return null;
+
+                    if (canvas.worldCamera != null)
+                        return canvas.worldCamera;
+
+                    // 2) fallback to raycaster event camera (if any)
+                    var raycaster = canvas.GetComponent<GraphicRaycaster>();
+                    if (raycaster != null && raycaster.eventCamera != null)
+                        return raycaster.eventCamera;
+                }
+
+                // 3) last resort
+                return Camera.main;
             }
         }
 
