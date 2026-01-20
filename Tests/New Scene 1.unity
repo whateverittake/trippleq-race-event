@@ -400,6 +400,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2750993660479612623, guid: 66ef919ba13c69246ad9872642aa10a0, type: 3}
+      propertyPath: _isInPackageDev
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2750993660479612623, guid: 66ef919ba13c69246ad9872642aa10a0, type: 3}
       propertyPath: _configSOs.Array.size
       value: 1
       objectReference: {fileID: 0}

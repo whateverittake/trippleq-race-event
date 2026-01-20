@@ -8733,6 +8733,7 @@ MonoBehaviour:
   _paidCoinBtn: {fileID: 6849434632627871427}
   _reward: {fileID: 2548704901626734153}
   _decoLight: {fileID: 1691840911775519499}
+  _rotateSpeed: 2
 --- !u!1 &7578090857159718720
 GameObject:
   m_ObjectHideFlags: 0
@@ -11596,6 +11597,18 @@ PrefabInstance:
     - target: {fileID: 4119029507867901428, guid: fd4ad8730f2eba14a937087c5950229b, type: 3}
       propertyPath: m_SizeDelta.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4119029507867901428, guid: fd4ad8730f2eba14a937087c5950229b, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4119029507867901428, guid: fd4ad8730f2eba14a937087c5950229b, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4119029507867901428, guid: fd4ad8730f2eba14a937087c5950229b, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4119029507867901428, guid: fd4ad8730f2eba14a937087c5950229b, type: 3}
       propertyPath: m_AnchoredPosition.y

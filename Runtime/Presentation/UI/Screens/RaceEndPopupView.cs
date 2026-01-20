@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -80,9 +81,75 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         public void OnClaimReward() 
         {
+            StartCoroutine(PlayClaimSequence());
+            //_onClaim?.Invoke();
+            //_onCloseOptional?.Invoke();
+        }
+
+        private IEnumerator PlayClaimSequence()
+        {
+            // 1. khóa nút claim
+            _claimButton?.SetActive(false);
+
+            // 2. chest shake
+            yield return PlayChestShake(0.4f, 8f);
+
+            // 3. open chest
+            OpenChestAnim();
+
+            // 4. reward pop
+            _reward.gameObject.SetActive(true);
+            yield return PlayRewardPop(_reward.transform);
+
+            // 5. delay cho đã mắt
+            yield return new WaitForSecondsRealtime(0.6f);
+
+            // 6. gọi logic thật
             _onClaim?.Invoke();
+
+            // 7. close view
             _onCloseOptional?.Invoke();
         }
+
+        private IEnumerator PlayChestShake(float duration, float strength)
+        {
+            if (_chestImage == null) yield break;
+
+            var rect = _chestImage.rectTransform;
+            var origin = rect.localEulerAngles;
+
+            float time = 0f;
+            while (time < duration)
+            {
+                float z = Mathf.Sin(time * 40f) * strength;
+                rect.localEulerAngles = new Vector3(origin.x, origin.y, origin.z + z);
+                time += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            rect.localEulerAngles = origin;
+        }
+
+        private IEnumerator PlayRewardPop(Transform rewardTf)
+        {
+            if (!rewardTf) yield break;
+
+            rewardTf.localScale = Vector3.zero;
+
+            float t = 0f;
+            const float dur = 0.25f;
+
+            while (t < dur)
+            {
+                float s = Mathf.SmoothStep(0f, 1f, t / dur);
+                rewardTf.localScale = Vector3.one * s;
+                t += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            rewardTf.localScale = Vector3.one;
+        }
+
         public void CloseAndOpenExtendViewClick()
         {
             _onCloseToOpenExtendView?.Invoke();
@@ -105,7 +172,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void SetViewState(RaceEndPopupState state, RewardData reward)
         {
             HideAll();
-           
+            _reward.gameObject.SetActive(false);
             switch (state)
             {
                 case RaceEndPopupState.FirstPlace:
