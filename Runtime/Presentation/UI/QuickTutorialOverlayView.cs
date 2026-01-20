@@ -293,9 +293,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             PositionBubble(center, min, max);
 
             // Hole rect
-            _holeRect.anchoredPosition = center;
-            _holeRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, Mathf.Max(0, size.x));
-            _holeRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, Mathf.Max(0, size.y));
+            //_holeRect.anchoredPosition = center;
+            //_holeRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, Mathf.Max(0, size.x));
+            //_holeRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, Mathf.Max(0, size.y));
 
             // Dim rects around hole
             float w = _overlayRoot.rect.width;
