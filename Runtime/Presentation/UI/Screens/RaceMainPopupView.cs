@@ -164,13 +164,23 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             return _closeBtnRect;
         }
 
-        public void PlayMainTutorial(RectTransform r1, RectTransform r2)
+        public void PlayMainTutorial(RectTransform r1)
         {
-            var targets = new[] { r1, r2 };
+            var targets = new[] { r1};
             var texts = new[]
             {
-                "Tap to view the race rules.",
-                "Tap to close.",
+                "Tap to view the race rules."
+            };
+
+            _quickTutorialOverlayView.Play(targets, texts);
+        }
+
+        public void PlayMainTutorial2(RectTransform r2)
+        {
+            var targets = new[] {r2 };
+            var texts = new[]
+            {
+                "Tap to close."
             };
 
             _quickTutorialOverlayView.Play(targets, texts);

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using TrippleQ.UiKit;
 using UnityEngine;
 using static TrippleQ.Event.RaceEvent.Runtime.PopupTypes;
@@ -12,6 +11,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private readonly Func<bool> _isInTutorial;
 
         private float _refreshAccum = 0f;
+        private const string PrefKey_MainTutStep = "Race_Main_Tut_Step";
 
         public RaceMainPopupPresenter(RaceEventService svc, Func<bool> isInTutorial)
         {
@@ -53,12 +53,27 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             View.InitData(_svc.CurrentRun);
             View.InitDataReward(_svc.GetRewardForRank(1),_svc.GetRewardForRank(2),_svc.GetRewardForRank(3));
 
-            if (_svc.ConsumeFirstTimePopup(PopupType.Main))
+            int step = PlayerPrefs.GetInt(PrefKey_MainTutStep, 0);
+
+            if (step == 0)
             {
+                // Lần vào main đầu tiên
                 View.PlayMainTutorial(
-                    View.GetRectForTutOne(),
+                    View.GetRectForTutOne()
+                );
+
+                PlayerPrefs.SetInt(PrefKey_MainTutStep, 1);
+                PlayerPrefs.Save();
+            }
+            else if (step == 1)
+            {
+                // Lần vào main thứ 2
+                View.PlayMainTutorial2(
                     View.GetRectForTutTwo()
                 );
+
+                PlayerPrefs.SetInt(PrefKey_MainTutStep, 2);
+                PlayerPrefs.Save();
             }
         }
 

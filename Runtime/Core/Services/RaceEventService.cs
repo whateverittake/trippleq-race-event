@@ -1857,6 +1857,20 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             TrySave();
             return true;
         }
+
+        public void RemoveConsumePopup(PopupType type) 
+        { 
+            ThrowIfNotInitialized();
+            _save.SeenPopupTypes ??= new List<int>();
+
+            int key = (int)type;
+
+            if (_save.SeenPopupTypes.Contains(key))
+            {
+                _save.SeenPopupTypes.Remove(key);
+            }
+        }
+
     }
 
     public readonly struct LeaderboardSnapshot

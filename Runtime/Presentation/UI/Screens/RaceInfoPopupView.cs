@@ -1,6 +1,5 @@
 using System;
 using TMPro;
-using TrippleQ.UiKit;
 using UnityEngine;
 
 namespace TrippleQ.Event.RaceEvent.Runtime

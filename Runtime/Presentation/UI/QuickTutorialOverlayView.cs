@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
@@ -70,6 +72,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         [Tooltip("If true, keep syncing hole position each LateUpdate (recommended when layout groups animate/settle).")]
         [SerializeField] private bool _continuousSync = true;
+
+        private readonly List<RaycastResult> _raycastResults = new List<RaycastResult>(32);
+        private bool _isForwarding;
 
         private RectTransform[] _targets;
         private string[] _texts;
@@ -153,6 +158,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private void OnHoleClicked()
         {
             if (!_playing) return;
+
+            ForwardClickToUnderlying();
 
             int next = _index + 1;
             if (next >= _targets.Length)
@@ -293,9 +300,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             PositionBubble(center, min, max);
 
             // Hole rect
-            //_holeRect.anchoredPosition = center;
-            //_holeRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, Mathf.Max(0, size.x));
-            //_holeRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, Mathf.Max(0, size.y));
+            _holeRect.anchoredPosition = center;
+            _holeRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, Mathf.Max(0, size.x));
+            _holeRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, Mathf.Max(0, size.y));
 
             // Dim rects around hole
             float w = _overlayRoot.rect.width;
@@ -384,5 +391,71 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, Mathf.Max(0f, size.x));
             rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, Mathf.Max(0f, size.y));
         }
+
+        private void ForwardClickToUnderlying()
+        {
+            if (_isForwarding) return;
+            if (EventSystem.current == null) return;
+            if (_overlayRoot == null || _holeRect == null) return;
+
+            _isForwarding = true;
+
+            // Lấy screen position của tâm hole
+            var cam = UICamera;
+            Vector2 screenPos = RectTransformUtility.WorldToScreenPoint(cam, _holeRect.TransformPoint(_holeRect.rect.center));
+
+            // Tạo pointer event
+            var ped = new PointerEventData(EventSystem.current)
+            {
+                position = screenPos,
+                button = PointerEventData.InputButton.Left
+            };
+
+            _raycastResults.Clear();
+
+            // RaycastAll dùng GraphicRaycaster trên Canvas, EventSystem sẽ tự gọi
+            EventSystem.current.RaycastAll(ped, _raycastResults);
+
+            // Tìm target hợp lệ bên dưới (bỏ overlay)
+            GameObject target = null;
+
+            for (int i = 0; i < _raycastResults.Count; i++)
+            {
+                var go = _raycastResults[i].gameObject;
+                if (go == null) continue;
+
+                // Skip mọi thứ thuộc overlay root
+                if (go.transform.IsChildOf(_overlayRoot)) continue;
+
+                // Ưu tiên Button/Selectable
+                var selectable = go.GetComponentInParent<Selectable>();
+                if (selectable != null && selectable.IsActive() && selectable.IsInteractable())
+                {
+                    target = selectable.gameObject;
+                    break;
+                }
+
+                // fallback: object có handler click
+                if (ExecuteEvents.GetEventHandler<IPointerClickHandler>(go) != null)
+                {
+                    target = go;
+                    break;
+                }
+            }
+
+            if (target != null)
+            {
+                // Forward pointer events (đủ chuẩn UI)
+                var clickHandler = ExecuteEvents.GetEventHandler<IPointerClickHandler>(target);
+                if (clickHandler == null) clickHandler = target;
+
+                ExecuteEvents.Execute(clickHandler, ped, ExecuteEvents.pointerDownHandler);
+                ExecuteEvents.Execute(clickHandler, ped, ExecuteEvents.pointerUpHandler);
+                ExecuteEvents.Execute(clickHandler, ped, ExecuteEvents.pointerClickHandler);
+            }
+
+            _isForwarding = false;
+        }
+
     }
 }
