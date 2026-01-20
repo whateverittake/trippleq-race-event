@@ -1018,7 +1018,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             if (canShowEntry)
             {
                 // active state: no countdown
-                return new RaceHudStatus(true, false, false, TimeSpan.Zero, "Race now!", false);
+                return new RaceHudStatus(true, false, false, TimeSpan.Zero, "Race Event", false);
             }
             //Log("xx 5");
             var nextReset3 = GetNextResetLocal(localNow);
