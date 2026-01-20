@@ -19,6 +19,14 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private List<RaceEventConfig> _pendingConfigs;
         private BotPoolJson _pendingPool;
 
+        // ---- FIX: init args may arrive before async load completes ----
+        private bool _hasInitArgs;
+        private int _cachedPlayerLevel;
+        private bool _cachedIsInTutorial;
+
+        private bool _hasServiceData;   // pending configs/storage/pool are ready
+        private bool _didInitialize;    // ensure init once
+
         private Action<RaceReward>? _boundRewardHandler;
         private Action<Action<bool>>? _boundWatchAdsHandler;
 
@@ -62,15 +70,26 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             {
                 StartCoroutine(JsonBotPoolLoader.LoadOrFallbackAsync(pool =>
                 {
-                    _svc.Initialize(configs: runtimeConfigs,
-                                    storage: storage,
-                                    initialLevel: _levelTestMod,
-                                    isInTutorial: false,
-                                    pool);
+                    _pendingStorage = storage;
+                    _pendingConfigs = runtimeConfigs;
+                    _pendingPool = pool;
+
+                    _hasServiceData = true;
+
+                    TryInitializeIfReady();
 
                     OnServiceReady?.Invoke(_svc);
-
                     _svc.SetTestMode(true);
+
+                    //_svc.Initialize(configs: runtimeConfigs,
+                    //                storage: storage,
+                    //                initialLevel: _levelTestMod,
+                    //                isInTutorial: false,
+                    //                pool);
+
+                    //OnServiceReady?.Invoke(_svc);
+
+                    //_svc.SetTestMode(true);
                 }));
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -92,9 +111,18 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             {
                 StartCoroutine(JsonBotPoolLoader.LoadOrFallbackAsync(pool =>
                 {
+                    //_pendingStorage = storage;
+                    //_pendingConfigs = runtimeConfigs;
+                    //_pendingPool = pool;
+
+                    //OnServiceReady?.Invoke(_svc);
+
                     _pendingStorage = storage;
                     _pendingConfigs = runtimeConfigs;
                     _pendingPool = pool;
+
+                    _hasServiceData = true;
+                    TryInitializeIfReady();
 
                     OnServiceReady?.Invoke(_svc);
                 }));
@@ -103,13 +131,19 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         public void Initialize(int playerLevel, bool isInTutorial)
         {
-            _svc.Initialize(
-                configs: _pendingConfigs,
-                storage: _pendingStorage,
-                initialLevel: playerLevel,
-                isInTutorial: isInTutorial,
-                botPool: _pendingPool
-            );
+            //_svc.Initialize(
+            //    configs: _pendingConfigs,
+            //    storage: _pendingStorage,
+            //    initialLevel: playerLevel,
+            //    isInTutorial: isInTutorial,
+            //    botPool: _pendingPool
+            //);
+
+            _cachedPlayerLevel = playerLevel;
+            _cachedIsInTutorial = isInTutorial;
+            _hasInitArgs = true;
+
+            TryInitializeIfReady();
         }
 
         public void OnClaimRewardRace(Action<RaceReward> claimAction)
@@ -286,6 +320,34 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             return _isInDev;
         }
 
+        private void TryInitializeIfReady()
+        {
+            if (_svc == null) return;
+            if (_didInitialize || _svc.IsInitialized) return;
+
+            // Need BOTH: service data ready + init args ready
+            if (!_hasServiceData) return;
+            if (!_hasInitArgs) return;
+
+            if (_pendingConfigs == null || _pendingConfigs.Count == 0)
+            {
+                Debug.LogError("[RaceEventBootstrap] Cannot initialize: configs is null/empty.");
+                return;
+            }
+            if (_pendingStorage == null)
+            {
+                Debug.LogError("[RaceEventBootstrap] Cannot initialize: storage is null.");
+                return;
+            }
+            if (_pendingPool == null)
+            {
+                Debug.LogError("[RaceEventBootstrap] Cannot initialize: bot pool is null.");
+                return;
+            }
+
+            _svc.Initialize(_pendingConfigs, _pendingStorage, _cachedPlayerLevel, _cachedIsInTutorial, _pendingPool);
+            _didInitialize = true;
+        }
 
     }
 }
