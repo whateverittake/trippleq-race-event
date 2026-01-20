@@ -9,6 +9,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         [SerializeField] List<RaceEventConfigSO> _configSOs;
         [SerializeField] bool _isInDev=false;
         [SerializeField] bool _autoInit=false;
+        [SerializeField] bool _isInPackageDev=false;
 
         private RaceEventService _svc;
 
@@ -70,26 +71,31 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             {
                 StartCoroutine(JsonBotPoolLoader.LoadOrFallbackAsync(pool =>
                 {
-                    _pendingStorage = storage;
-                    _pendingConfigs = runtimeConfigs;
-                    _pendingPool = pool;
+                    if (_isInPackageDev)
+                    {
+                        _svc.Initialize(configs: runtimeConfigs,
+                                        storage: storage,
+                                        initialLevel: _levelTestMod,
+                                        isInTutorial: false,
+                                        pool);
 
-                    _hasServiceData = true;
+                        OnServiceReady?.Invoke(_svc);
 
-                    TryInitializeIfReady();
+                        _svc.SetTestMode(true);
+                    }
+                    else
+                    {
+                        _pendingStorage = storage;
+                        _pendingConfigs = runtimeConfigs;
+                        _pendingPool = pool;
 
-                    OnServiceReady?.Invoke(_svc);
-                    _svc.SetTestMode(true);
+                        _hasServiceData = true;
 
-                    //_svc.Initialize(configs: runtimeConfigs,
-                    //                storage: storage,
-                    //                initialLevel: _levelTestMod,
-                    //                isInTutorial: false,
-                    //                pool);
+                        TryInitializeIfReady();
 
-                    //OnServiceReady?.Invoke(_svc);
-
-                    //_svc.SetTestMode(true);
+                        OnServiceReady?.Invoke(_svc);
+                        _svc.SetTestMode(true);
+                    }
                 }));
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
