@@ -1780,6 +1780,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1925356579291752852, guid: bd88b2af036084043af6927531b7a33d, type: 3}
+      propertyPath: _rotateSpeed
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 2009653907718254704, guid: bd88b2af036084043af6927531b7a33d, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0

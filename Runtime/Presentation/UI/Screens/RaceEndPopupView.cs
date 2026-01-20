@@ -51,6 +51,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         [SerializeField] RewardTooltipUIView _reward;
 
+        [SerializeField] RectTransform _decoLight;
+        [SerializeField] float _rotateSpeed = 2f;
+
         private Action _onClose;
         private Action _onClaim;
         private Action _onExtend;
@@ -62,6 +65,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private IReadOnlyList<RaceParticipant> _racer;
         private int _playerRank = 1;
+
+        private void Update()
+        {
+            RotateRect(_decoLight, _rotateSpeed);
+        }
 
         // ===== Button hooks (gán từ UI Button OnClick) =====
         public void OnQuitPopup() 
@@ -318,6 +326,16 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void ShowPayCoins(int coinCost)
         {
             _paidCoinText.text = coinCost.ToString();
+        }
+
+        private void RotateRect(RectTransform rect, float speedDegPerSec)
+        {
+            if (!rect || !rect.gameObject.activeInHierarchy)
+                return;
+
+            var euler = rect.localEulerAngles;
+            euler.z += speedDegPerSec * Time.unscaledDeltaTime;
+            rect.localEulerAngles = euler;
         }
     }
 }
