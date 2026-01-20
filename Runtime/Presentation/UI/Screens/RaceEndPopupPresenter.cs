@@ -157,7 +157,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             //    // 4) UI/Anim (nếu muốn)
             //    // ui.ShowRewardFly(reward);
             //};
-            Render(); // service có thể bắn event, nhưng render ngay cho chắc
+            //Render(); // service có thể bắn event, nhưng render ngay cho chắc
         }
 
         private void OnAcceptToHide()
