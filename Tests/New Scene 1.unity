@@ -2500,6 +2500,34 @@ PrefabInstance:
       propertyPath: m_SizeDelta.x
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4017620649855886010, guid: bd88b2af036084043af6927531b7a33d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4017620649855886010, guid: bd88b2af036084043af6927531b7a33d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4017620649855886010, guid: bd88b2af036084043af6927531b7a33d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 8099880494408999312}
+    - target: {fileID: 4017620649855886010, guid: bd88b2af036084043af6927531b7a33d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4017620649855886010, guid: bd88b2af036084043af6927531b7a33d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnOKClick
+      objectReference: {fileID: 0}
+    - target: {fileID: 4017620649855886010, guid: bd88b2af036084043af6927531b7a33d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: TrippleQ.Event.RaceEvent.Runtime.RaceEndPopupView, TrippleQ.Event.RaceEvent
+      objectReference: {fileID: 0}
+    - target: {fileID: 4017620649855886010, guid: bd88b2af036084043af6927531b7a33d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     - target: {fileID: 4070139422878771666, guid: bd88b2af036084043af6927531b7a33d, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0

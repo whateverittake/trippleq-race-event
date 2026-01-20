@@ -63,6 +63,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private Action _onWatchAds;
         private Action _onCloseOptional;
         private Action _onAcceptNoReward;
+        private Action _onOk;
 
         private IReadOnlyList<RaceParticipant> _racer;
         private int _playerRank = 1;
@@ -109,6 +110,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             // 7. close view
             _onCloseOptional?.Invoke();
+
             _okBtn.SetActive(true);
         }
 
@@ -162,6 +164,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _onCloseOptional?.Invoke();
         }
 
+        public void OnOKClick() => _onOk?.Invoke();
+
         public void OnExtendRaceClick() => _onExtend?.Invoke();
 
         public void OnWatchAdsClick()=> _onWatchAds?.Invoke();
@@ -202,6 +206,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void SetOnClose(Action onClick) => _onClose = onClick;
         public void SetOnClaim(Action onClick) => _onClaim = onClick;
         public void SetOnExtend(Action onClick) => _onExtend = onClick;
+
+        public void SetOnAcceptToHideView(Action onAcceptToHide)
+        {
+            _onOk= onAcceptToHide;
+        }
 
         public void SetOnAcceptNoReward(Action onClick) => _onAcceptNoReward = onClick;
 

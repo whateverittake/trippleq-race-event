@@ -36,7 +36,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         void SetOnCloseToOpenExtendView(Action onClick);
 
         void SetOnCloseWithoutExtend(Action onClick);
-
+        void SetOnAcceptToHideView(Action onAcceptToHide);
         void SetOnWatchAds(Action onClick);
 
         void SetDataLeaderBoard(IReadOnlyList<RaceParticipant> allRacer, int playerRank);

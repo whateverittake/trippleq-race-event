@@ -28,6 +28,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             View.SetOnCloseWithoutExtend(OnCloseWithoutExtend);
             View.SetOnWatchAds(OnWatchAds);
             View.SetOnAcceptNoReward(OnAcceptNoReward);
+            View.SetOnAcceptToHideView(OnAcceptToHide);
 
             _svc.OnStateChanged += OnStateChanged;
             _svc.OnRunUpdated += OnRunUpdated;
@@ -157,6 +158,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             //    // ui.ShowRewardFly(reward);
             //};
             Render(); // service có thể bắn event, nhưng render ngay cho chắc
+        }
+
+        private void OnAcceptToHide()
+        {
             Hide();
         }
 
