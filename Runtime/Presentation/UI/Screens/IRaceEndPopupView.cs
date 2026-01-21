@@ -45,5 +45,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         void OpenChestAnim();
         void ShowAdsBtn(bool canWatchAds);
         void ShowPayCoins(int coinCost);
+        void ShowReward(bool canClaim);
     }
 }

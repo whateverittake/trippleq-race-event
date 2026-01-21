@@ -176,8 +176,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         public void SetViewState(RaceEndPopupState state, RewardData reward)
         {
+            Debug.Log($"<color=yellow>RaceEndPopupView::SetViewState:</color> state={state}, reward={reward}"); 
             HideAll();
-            _reward.gameObject.SetActive(false);
+           
             switch (state)
             {
                 case RaceEndPopupState.FirstPlace:
@@ -187,7 +188,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                     RenderNormalReward(reward);
                     break;
                 case RaceEndPopupState.NoClaim:
-                    if(_playerRank==1) Render1stReward(reward);
+                    if (_playerRank==1) Render1stReward(reward);
                     else RenderNormalReward(reward);
                     break;
                 case RaceEndPopupState.LastChance:
@@ -319,7 +320,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _rankView?.SetActive(true);
             _titleImage.sprite = _titleChampion;
             _titleImage.SetNativeSize();
-            _reward.UpdateView(reward);
+            if(reward!=null) _reward.UpdateView(reward);
         }
 
         private void RenderNormalReward(RewardData reward)
@@ -328,7 +329,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _rankView?.SetActive(true);
             _titleImage.sprite = _titleFininsh;
             _titleImage.SetNativeSize();
-            _reward.UpdateView(reward);
+            if (reward != null) _reward.UpdateView(reward);
         }
 
         private void RenderCanExtendOffer()
@@ -393,6 +394,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             }
 
             _chestImage.sprite = _chestIconOpen[index];
+            _chestImage.SetNativeSize();
         }
 
         public void ShowAdsBtn(bool isShow)
@@ -414,6 +416,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             var euler = rect.localEulerAngles;
             euler.z += speedDegPerSec * Time.unscaledDeltaTime;
             rect.localEulerAngles = euler;
+        }
+
+        public void ShowReward(bool canClaim)
+        {
+            _reward.gameObject.SetActive(!canClaim);
         }
     }
 }

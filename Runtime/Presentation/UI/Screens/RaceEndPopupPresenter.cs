@@ -73,7 +73,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             // Setup base data (rank/opponents/reward)
             SetUpData(run);
-
+            bool canClaim = _svc.CanClaim();
+            View.ShowReward(canClaim);
             // Decide which mode this popup is in
             bool canExtend = _svc.CanExtend1H();
 
@@ -103,11 +104,25 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             if (run.FinalPlayerRank == 1)
             {
-                View.SetViewState(RaceEndPopupState.FirstPlace, new RewardData(_currentReward.Gold, _currentReward.Gems, _currentReward.Booster1, _currentReward.Booster2, _currentReward.Booster3,_currentReward.Booster4));
+                if (_currentReward == null)
+                {
+                    View.SetViewState(RaceEndPopupState.FirstPlace, null);
+                }
+                else
+                {
+                    View.SetViewState(RaceEndPopupState.FirstPlace, new RewardData(_currentReward.Gold, _currentReward.Gems, _currentReward.Booster1, _currentReward.Booster2, _currentReward.Booster3, _currentReward.Booster4));
+                }
             }
             else
             {
-                View.SetViewState(RaceEndPopupState.NormalPlace, new RewardData(_currentReward.Gold, _currentReward.Gems, _currentReward.Booster1, _currentReward.Booster2, _currentReward.Booster3, _currentReward.Booster4));
+                if (_currentReward == null)
+                {
+                    View.SetViewState(RaceEndPopupState.NormalPlace, null);
+                }
+                else
+                {
+                    View.SetViewState(RaceEndPopupState.NormalPlace, new RewardData(_currentReward.Gold, _currentReward.Gems, _currentReward.Booster1, _currentReward.Booster2, _currentReward.Booster3, _currentReward.Booster4));
+                }
             }
         }
 
@@ -117,7 +132,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             var snap = _svc.GetLeaderboardSnapshot(5); // hoặc _leaderBoardRanks.Length nếu view expose
 
             // 2) reward: chỉ dựa vào rank khi canClaim hoặc rank1 special
-            RaceReward reward = new RaceReward();
+            RaceReward reward = null;
 
             bool canClaim = _svc.CanClaim();
 
