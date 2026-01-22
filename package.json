@@ -1,6 +1,6 @@
 {
   "name": "com.trippleq.race-event",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "displayName": "Race Event",
   "description": "Reusable Race Event core for casual games. Includes database SO, persistence, and unlock integration interfaces.",
   "unity": "6000.0",
