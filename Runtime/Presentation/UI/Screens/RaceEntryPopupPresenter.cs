@@ -44,7 +44,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void OnAgree()
         {
-            _svc.JoinRace(isInTutorial: _isInTutorial(), localNow: DateTime.Now);
+            _svc.Flow.JoinRace(isInTutorial: _isInTutorial(), localNow: DateTime.Now);
             // service sẽ RequestPopup(Main/Search…) tuỳ flow, controller sẽ routing
         }
     }

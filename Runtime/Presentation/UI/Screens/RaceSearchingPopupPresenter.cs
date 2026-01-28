@@ -48,7 +48,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private void OnFinished()
         {
             // service sẽ guard state Searching (nếu popup bị đóng sớm)
-            _svc.ConfirmSearchingFinished();
+            _svc.Flow.ConfirmSearchingFinished();
         }
 
         private void OnClose()
