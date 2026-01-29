@@ -8,7 +8,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     public class RaceMainPopupPresenter : BasePopupPresenter<IRaceMainPopupView>
     {
         private readonly RaceEventService _svc;
-        private readonly Func<bool> _isInTutorial;
 
         private float _refreshAccum = 0f;
         private const string PrefKey_MainTutStep = "Race_Main_Tut_Step";
@@ -16,7 +15,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public RaceMainPopupPresenter(RaceEventService svc, Func<bool> isInTutorial)
         {
             _svc = svc;
-            _isInTutorial = isInTutorial ?? (() => false);
         }
 
         override protected void OnBind()
@@ -86,10 +84,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void Tick(float deltaTime)
         {
             if (!IsBound) return;
-            var localNow = DateTime.Now;
-            var s = _svc.GetHudStatus(localNow);
-
-            View.SetTimeStatus(_svc.FormatHMS(s.Remaining));
 
             _refreshAccum += deltaTime;
             if (_refreshAccum < 1f) return;
@@ -98,6 +92,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             var run = _svc.CurrentRun;
             if (run != null)
                 View.UpdateData(run);
+
+            var localNow = DateTime.Now;
+            var s = _svc.BuildHudStatus(localNow);
+            View.SetTimeStatus(_svc.FormatHMS(s.Remaining));
         }
 
         private void OnForceEndRace()

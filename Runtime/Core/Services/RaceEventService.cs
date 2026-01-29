@@ -3,6 +3,8 @@
 using System;
 using System.Collections.Generic;
 using static TrippleQ.Event.RaceEvent.Runtime.PopupTypes;
+using static TrippleQ.Event.RaceEvent.Runtime.RaceEligibility;
+using static TrippleQ.Event.RaceEvent.Runtime.RaceHudPresenter;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
@@ -12,8 +14,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     /// - Orchestrates: StateMachine + Simulation + Persistence + Providers.
     /// - UI listens to events emitted by this service.
     /// </summary>
-    public sealed class RaceEventService : IDisposable
+    public sealed partial class RaceEventService : IDisposable
     {
+        private readonly HudContextToken _hudContextToken = new HudContextToken();
+
         // ---- Events for UI/Bootstrap ----
         public event Action<string>? OnLog;
         public event Action<RaceEventState, RaceEventState>? OnStateChanged;
@@ -24,6 +28,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         // ---- Core ----
         private readonly RaceEventStateMachine _sm = new RaceEventStateMachine();
+        private readonly RaceScheduler _raceScheduler= new RaceScheduler();
+        private readonly RaceEngine _raceEngine = new RaceEngine();
+        private readonly RaceHudPresenter _raceHudPresenter = new RaceHudPresenter();
+        private readonly RaceEligibility _raceEligibility;
 
         private bool _initialized;
         private bool _disposed;
@@ -89,6 +97,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         public RaceEventService()
         {
+            _raceEligibility = new RaceEligibility(_raceScheduler);
             _sm.OnStateChanged += (from, to) =>
             {
                 OnStateChanged?.Invoke(from, to);
@@ -170,7 +179,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             Log($"Initialized. CurrentLevel={CurrentLevel}");
 
             // Update eligibility once on init
-            RefreshEligibility(isInTutorial, NowLocal());
+            RefreshEligibility(NowLocal());
 
             PublishRunUpdated();
         }
@@ -213,7 +222,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             if (_tickAccum < TickIntervalSeconds) return;
             _tickAccum = 0f;
 
-            SimulateBotsTick();
+            SimulateBotsIfChanged();
         }
 
         public bool CanClaim()
@@ -321,17 +330,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             };
         }
 
-
-
-        private void ClearRunAfterClaim()
-        {
-            _run = null;
-            _save.CurrentRun = null;
-            _save.LastFlowState = RaceEventState.Idle;
-            TrySave();
-            PublishRunUpdated();
-        }
-
         // --------------------
         // Host hooks
         // --------------------
@@ -347,14 +345,14 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         /// <summary>
         /// Host calls this when entering main screen/home scene.
         /// </summary>
-        public void OnEnterMain(bool isInTutorial, DateTime localNow)
+        public void OnEnterMain(DateTime localNow)
         {
             ThrowIfNotInitialized();
             Log("OnEnterMain()");
 
-            RefreshEligibility(isInTutorial, localNow);
+            RefreshEligibility(localNow);
 
-            if (ShouldShowEntryPopup(isInTutorial, localNow))
+            if (ShouldAutoShowEntryOnEnterMain(localNow))
             {
                 RequestPopup(new PopupRequest(PopupType.Entry));
             }
@@ -367,17 +365,12 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 TrySave();
                 PublishRunUpdated();
             }
-
-            //if (State == RaceEventState.Ended)
-            //{
-            //    RequestPopup(new PopupRequest(PopupType.Ended));
-            //}
         }
 
         /// <summary>
         /// Host calls this after player wins a level.
         /// </summary>
-        public void OnLevelWin(int newLevel, bool isInTutorial, DateTime localNow)
+        public void OnLevelWin(int newLevel, DateTime localNow)
         {
             ThrowIfNotInitialized();
 
@@ -389,7 +382,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 Log($"OnLevelWin(): CurrentLevel={CurrentLevel}");
             }
 
-            RefreshEligibility(isInTutorial, localNow);
+            RefreshEligibility(localNow);
 
             var max = ActiveConfigForRunOrCursor().GoalLevels;
 
@@ -425,40 +418,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             }
         }
 
-
-        // --------------------
-        // Eligibility (B)
-        // --------------------
-        public bool ShouldShowEntryPopup(bool isInTutorial, DateTime localNow)
-        {
-            ThrowIfNotInitialized();
-           // Log("xx 1: " + "ShouldShowEntryPopup");
-            // Do not show when already in race flow
-            if (State == RaceEventState.Searching || State == RaceEventState.InRace)
-                return false;
-            // Feature gating
-           // Log("xx 2: " + "ShouldShowEntryPopup");
-            if (!ActiveConfigForRunOrCursor().Enabled) return false;
-            // Tutorial gating
-           // Log("xx 3: " + "ShouldShowEntryPopup");
-            if (ActiveConfigForRunOrCursor().BlockDuringTutorial && isInTutorial) return false;
-            // Min level gating
-           // Log("xx 4: " + "ShouldShowEntryPopup: "+ CurrentLevel+"/"+ ActiveConfigForRunOrCursor().MinPlayerLevel);
-            if (CurrentLevel < ActiveConfigForRunOrCursor().MinPlayerLevel) return false;
-
-            //Log("xx 8: " + isInTutorial);
-            // Cooldown gating (hours)
-           // Log("xx 5: " + "ShouldShowEntryPopup");
-            if (IsInCooldown(localNow)) return false;
-            //Log("xx 9: " + isInTutorial);
-            // Once per day gating (based on resetHourLocal)
-           // Log("xx 6: " + "ShouldShowEntryPopup");
-            if (HasShownEntryInCurrentWindow(localNow)) return false;
-            //Log("xx 7: " + "ShouldShowEntryPopup");
-            return true;
-        }
-
-        private void RefreshEligibility(bool isInTutorial, DateTime localNow)
+        //Update state machine
+        private void RefreshEligibility(DateTime localNow)
         {
             // If currently searching/in race, don't downgrade to Eligible/Idle
             if (State == RaceEventState.Searching ||
@@ -467,62 +428,27 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 State == RaceEventState.ExtendOffer)
                 return;
 
-            var canShow = ShouldShowEntryPopup(isInTutorial, localNow);
+            var isEligible = IsEligibleForEntry(localNow);
             // We separate 'Eligible' from just 'Idle' to let UI/HUD react later
-            _sm.SetState(canShow ? RaceEventState.Eligible : RaceEventState.Idle);
-        }
-
-        private bool IsInCooldown(DateTime localNow)
-        {
-            if (_save.LastJoinLocalUnixSeconds <= 0) return false;
-
-            var lastJoin = DateTimeOffset.FromUnixTimeSeconds(_save.LastJoinLocalUnixSeconds).LocalDateTime;
-            var hours = (localNow - lastJoin).TotalHours;
-            return hours < ActiveConfigForRunOrCursor().EntryCooldownHours;
-        }
-
-        private bool HasShownEntryInCurrentWindow(DateTime localNow)
-        {
-            // We store the "window id" as the local date of reset boundary.
-            // Example: reset at 4AM:
-            // - from 04:00 today to 03:59 tomorrow => same window id.
-
-            var windowId = GetWindowId(localNow, ActiveConfigForRunOrCursor().ResetHourLocal);
-            return _save.LastEntryShownWindowId == windowId;
-        }
-
-        private static int GetWindowId(DateTime localNow, int resetHourLocal)
-        {
-            // Shift time by reset boundary to make "day window"
-            // If resetHourLocal = 4, then 02:00 belongs to previous day window.
-            var shifted = localNow.AddHours(-resetHourLocal);
-            // int like 20251226
-            return shifted.Year * 10000 + shifted.Month * 100 + shifted.Day;
+            _sm.SetState(isEligible ? RaceEventState.Eligible : RaceEventState.Idle);
         }
 
         // --------------------
         // Join flow
         // --------------------
-        public bool CanJoinRace(bool isInTutorial, DateTime localNow)
-        {
-            if (State == RaceEventState.Searching || State == RaceEventState.InRace) return false;
-            return ShouldShowEntryPopup(isInTutorial, localNow);
-        }
 
         /// <summary>
         /// Called by Entry popup when player taps "Play/Join".
         /// </summary>
-        public void JoinRace(bool isInTutorial, DateTime localNow)
+        public void JoinRace(DateTime localNow)
         {
             ThrowIfNotInitialized();
-            if (!CanJoinRace(isInTutorial, localNow))
+
+            if (!IsEligibleForEntry(localNow))
             {
                 Log("JoinRace rejected (not eligible)");
                 return;
             }
-
-            // Mark "shown once per day"
-            _save.LastEntryShownWindowId = GetWindowId(localNow, ActiveConfigForRunOrCursor().ResetHourLocal);
 
             // Mark join time (local)
             _save.LastJoinLocalUnixSeconds = NowLocalUnixSeconds();
@@ -545,58 +471,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             PublishRunUpdated();
         }
 
-        private void SeedBots(RaceRun run, long utcNow)
-        {
-            // MVP pool (localization làm sau)
-            var pool = _botPool.Bots;
-            if (pool == null || pool.Count == 0)
-            {
-                Log("BotPool is empty. Please export race_bot_pool.json");
-                return;
-            }
-           
-            run.Opponents.Clear();
-            // Pick first N-1 (later: random w/ RNG provider)
-            var need = System.Math.Max(0, ActiveConfigForRunOrCursor().PlayersPerRace - 1);
-
-            // 1) Tính quota theo config
-            var comp = ActiveConfigForRunOrCursor().BotComposition;
-            // Nếu tổng quota != need => scale / clamp cho đúng need
-            NormalizeComposition(ref comp, need);
-
-            var levelFilteredPool = FilterByPlayerLevelOrClosest(pool, CurrentLevel);
-
-            if (levelFilteredPool.Count == 0)
-            {
-                // fallback: tuyệt đối không được thiếu
-                levelFilteredPool = new List<BotProfile>(pool);
-            }
-
-            // 1) Add theo quota (ưu tiên đúng level trước)
-            AddFromPool(run, levelFilteredPool, BotPersonality.Boss, comp.BossCount, utcNow, allowDuplicate: false);
-            AddFromPool(run, levelFilteredPool, BotPersonality.Normal, comp.NormalCount, utcNow, allowDuplicate: false);
-            AddFromPool(run, levelFilteredPool, BotPersonality.Noob, comp.NoobCount, utcNow, allowDuplicate: false);
-
-            // 2) Nếu thiếu theo từng type -> bù đúng type từ FULL POOL (bất chấp level)
-            EnsurePersonalityCount(run, levelFilteredPool, pool, BotPersonality.Boss, comp.BossCount, utcNow);
-            EnsurePersonalityCount(run, levelFilteredPool, pool, BotPersonality.Normal, comp.NormalCount, utcNow);
-            EnsurePersonalityCount(run, levelFilteredPool, pool, BotPersonality.Noob, comp.NoobCount, utcNow);
-
-            // 3) Nếu vẫn thiếu tổng -> fill bằng bot gần level yêu cầu nhất (bất kỳ type, allowDuplicate)
-            int remaining = need - run.Opponents.Count;
-            if (remaining > 0)
-                FillRemainingClosestLevel(run, pool, remaining, utcNow, CurrentLevel);
-
-            // Tới đây mà vẫn thiếu thì chỉ có thể là pool rỗng
-            if (run.Opponents.Count < need)
-            {
-                Log($"[ERROR] SeedBots cannot fill need={need}, got={run.Opponents.Count}. BotPool empty?");
-            }
-
-            // 4) Shuffle để boss không luôn đứng đầu
-            Shuffle(run.Opponents);
-        }
-
         /// <summary>
         /// Called by UI if player closes entry popup without joining.
         /// Still counts as "shown once/day" in this step (common LiveOps behavior).
@@ -604,7 +478,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void MarkEntryShown(DateTime localNow)
         {
             ThrowIfNotInitialized();
-            _save.LastEntryShownWindowId = GetWindowId(localNow, ActiveConfigForRunOrCursor().ResetHourLocal);
+            var cfg = ActiveConfigForRunOrCursor();
+            _save.LastEntryShownWindowId = _raceScheduler.ComputeWindowId(localNow, cfg.ResetHourLocal);
             TrySave();
             Log($"Entry shown marked for windowId={_save.LastEntryShownWindowId}");
         }
@@ -627,7 +502,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             var startUtc = utcNow;
 
             var localNow = NowLocal();
-            var dailyEndLocal = GetNextResetLocal(localNow); // theo config
+            var dailyEndLocal = _raceScheduler.ComputeNextResetLocal(localNow, ActiveConfigForRunOrCursor().ResetHourLocal); // theo config
             var endUtc = new DateTimeOffset(dailyEndLocal).ToUnixTimeSeconds();
             //var endUtc = utcNow + (long)TimeSpan.FromHours(ActiveConfigForRunOrCursor().DurationHours).TotalSeconds;
             var cfgIndex = _save.ConfigCursor;
@@ -652,7 +527,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 IsBot = false
             };
 
-            SeedBots(_run, utcNow);
+            _raceEngine.EnsureBotsSeeded(_run, utcNow,CurrentLevel, ActiveConfigForRunOrCursor(), _botPool, out string logString);
+            if(logString!=String.Empty)
+            {
+                Log(logString);
+            }
 
             // Persist run
             _save.CurrentRun = _run;
@@ -673,10 +552,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             RequestPopup(new PopupRequest(type));
         }
 
+        private void RequestPopup(PopupRequest type) => OnPopupRequested?.Invoke(type);
+
         // --------------------
         // Helpers
         // --------------------
-        private void RequestPopup(PopupRequest type) => OnPopupRequested?.Invoke(type);
         private void Log(string msg) => OnLog?.Invoke(msg);
         private void ThrowIfNotInitialized()
         {
@@ -738,21 +618,30 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             PublishRunUpdated();
         }
 
-        private void SimulateBotsTick()
+        private bool CanSimulateBots(long utcNow)
         {
-            if (_run == null) return;
+            if (_run == null) return false;
+            // Chỉ simulate khi đang trong race
+            if (State != RaceEventState.InRace) return false;
+            // tránh double tick trong cùng 1 giây
+           
+            if (utcNow == _lastSimulatedUtc) return false;
+            return true;
+        }
 
-            // Chỉ simulate khi đang trong race (tuỳ bạn muốn Searching cũng sim hay không)
-            if (State != RaceEventState.InRace) return;
-
+        //Chỉ simulate 1 lần mỗi giây (dùng lastSimulatedUtc).
+        //Tính hash trước/sau để biết có thay đổi progress hay không.
+        //Trả về true nếu run thay đổi(để Service quyết định Save/Publish).
+        private void SimulateBotsIfChanged()
+        {
             var utcNow = NowUtcSeconds();
-            if (utcNow == _lastSimulatedUtc) return; // tránh double tick trong cùng 1 giây
+            if (!CanSimulateBots(utcNow)) return;
+
             _lastSimulatedUtc = utcNow;
 
-            // Simulate
-            var beforeHash = ComputeProgressHash(_run);
+            var beforeHash = _raceEngine.ComputeRunProgressHash(_run);
             GhostBotSimulator.SimulateBots(_run, utcNow);
-            var afterHash = ComputeProgressHash(_run);
+            var afterHash = _raceEngine.ComputeRunProgressHash(_run);
 
             // Nếu có thay đổi thì mới publish + save (đỡ spam)
             if (afterHash != beforeHash)
@@ -764,18 +653,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             }
 
             FinalizeIfTimeUp(utcNow);
-        }
-
-        private static int ComputeProgressHash(RaceRun run)
-        {
-            unchecked
-            {
-                int h = 17;
-                h = h * 31 + run.Player.LevelsCompleted;
-                for (int i = 0; i < run.Opponents.Count; i++)
-                    h = h * 31 + run.Opponents[i].LevelsCompleted;
-                return h;
-            }
         }
 
         private void FinalizeIfTimeUp(long utcNow)
@@ -932,100 +809,13 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             Log($"Extend1H accepted. NewEndUtc={newEnd}");
         }
 
-        #region HUD Status
-        public DateTime GetNextResetLocal(DateTime localNow)
-        {
-            // reset hour like 4:00
-            var resetToday = new DateTime(localNow.Year, localNow.Month, localNow.Day, ActiveConfigForRunOrCursor().ResetHourLocal, 0, 0);
-
-            // if we're already past today's reset => next reset is tomorrow
-            if (localNow >= resetToday)
-                return resetToday.AddDays(1);
-
-            // else next reset is today at reset hour
-            return resetToday;
-        }
-
-        public RaceHudStatus GetHudStatus(DateTime localNow)
+        public void ForceRequestEntryPopup(DateTime localNow)
         {
             ThrowIfNotInitialized();
 
-            var cfg = ActiveConfigForRunOrCursor();
-            //Log("xx 1");
-            // if feature off -> hide
-            if (!cfg.Enabled)
-                return new RaceHudStatus(false, false, false, TimeSpan.Zero, "Next: ", false);
+            RefreshEligibility(localNow);
 
-            //HUD preview lock window ---
-            const int previewOffset = 5;
-            int unlockLevel = Math.Max(0, 20);
-            int showPreviewLevel = Math.Max(0, unlockLevel - previewOffset);
-
-            // before preview => hide widget
-            if (CurrentLevel < showPreviewLevel)
-                return new RaceHudStatus(false, false, false, TimeSpan.Zero, "", false);
-
-            // preview but locked
-            if (CurrentLevel < unlockLevel)
-            {
-                return new RaceHudStatus(
-                    isVisible: true,
-                    isSleeping: true,          // dùng icon xám/sleeping state
-                    hasClaim: false,
-                    remaining: TimeSpan.Zero,
-                    label: $"Lvl {unlockLevel}",
-                    showTextCountdown: false,
-                    isLocked: true,
-                    unlockAtLevel: unlockLevel
-                );
-            }
-            //Log("xx 2: "+ State);
-            // If ended & can claim => show claim attention (not sleeping)
-            if (State == RaceEventState.Ended && CanClaim())
-                return new RaceHudStatus(true, false, true, TimeSpan.Zero, "Claim now!", false);
-            //Log("xx 3");
-            // If in race -> hide widget (hoặc show active icon)
-            if (State == RaceEventState.InRace || State == RaceEventState.Searching)
-            {
-                // no run? fallback hide
-                if (_run == null)
-                    return new RaceHudStatus(false, false, false, TimeSpan.Zero, "", false);
-
-                // (A) EXTENDED: show remaining to EndUtc (≈ 1h),
-                // and if expired -> hide (your requirement)
-                if (_run.HasExtended)
-                {
-                    var nowUtc = NowUtcSeconds();
-                    var remainingSec = _run.EndUtcSeconds - nowUtc;
-
-                    if (remainingSec <= 0)
-                        return new RaceHudStatus(false, false, false, TimeSpan.Zero, "", false);
-
-                    var remaining = TimeSpan.FromSeconds(remainingSec);
-                    return new RaceHudStatus(true, false, false, remaining, "End in: ", true);
-                }
-
-                // (B) NOT EXTENDED: always count down to next 4AM reset
-                var nextReset = GetNextResetLocal(localNow); // uses ResetHourLocal
-                var remaining2 = nextReset - localNow;
-                if (remaining2 < TimeSpan.Zero) remaining2 = TimeSpan.Zero;
-
-                return new RaceHudStatus(true, false, false, remaining2, "End in: ", true);
-            }
-            //Log("xx 4");
-            // Otherwise: idle/eligible -> if eligible you may show active icon, if not eligible show sleeping + countdown
-            var canShowEntry = ShouldShowEntryPopup(isInTutorial: false, localNow); // HUD không biết tutorial thì bạn có thể truyền vào overload khác
-            if (canShowEntry)
-            {
-                // active state: no countdown
-                return new RaceHudStatus(true, false, false, TimeSpan.Zero, "Race Event", false);
-            }
-            //Log("xx 5");
-            var nextReset3 = GetNextResetLocal(localNow);
-            var remaining3 = nextReset3 - localNow;
-            if (remaining3 < TimeSpan.Zero) remaining3 = TimeSpan.Zero;
-
-            return new RaceHudStatus(true, true, false, remaining3, "Next in: ", true);
+            RequestPopup(new PopupRequest(PopupType.Entry));
         }
 
         public void RequestInRacePopup()
@@ -1038,53 +828,18 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void RequestEndedPopup()
         {
             ThrowIfNotInitialized();
-            if (State == RaceEventState.Ended|| State== RaceEventState.ExtendOffer)
+            if (State == RaceEventState.Ended || State == RaceEventState.ExtendOffer)
                 RequestPopup(new PopupRequest(PopupType.Ended));
         }
 
-        public void RequestEntryPopup(bool isInTutorial, DateTime localNow)
+        public void RequestEntryPopup(DateTime localNow)
         {
             ThrowIfNotInitialized();
-            RefreshEligibility(isInTutorial, localNow);
-            if (ShouldShowEntryPopup(isInTutorial, localNow))
+
+            RefreshEligibility(localNow);
+
+            if (IsEligibleForEntry(localNow))
                 RequestPopup(new PopupRequest(PopupType.Entry));
-        }
-
-        public void ForceRequestEntryPopup(bool isInTutorial, DateTime localNow)
-        {
-            ThrowIfNotInitialized();
-            RefreshEligibility(isInTutorial, localNow);
-            RequestPopup(new PopupRequest(PopupType.Entry));
-        }
-
-        public RaceHudClickAction GetHudClickAction(bool isInTutorial, DateTime localNow)
-        {
-            ThrowIfNotInitialized();
-
-            return GetHudMode(isInTutorial, localNow) switch
-            {
-                HudMode.Claim => RaceHudClickAction.OpenEnded,
-                HudMode.InRace => RaceHudClickAction.OpenInRace,
-                HudMode.Entry => RaceHudClickAction.OpenEntry,
-                _ => RaceHudClickAction.None
-            };
-
-            //var hud = GetHudStatus(localNow);
-            //if (hud.IsLocked) return RaceHudClickAction.None;
-
-            //if (State == RaceEventState.Ended && CanClaim())
-            //    return RaceHudClickAction.OpenEnded;
-
-            //if (State == RaceEventState.InRace)
-            //    return RaceHudClickAction.OpenInRace;
-
-            //if(State == RaceEventState.ExtendOffer)
-            //    return RaceHudClickAction.OpenEnded;
-
-            //if (ShouldShowEntryPopup(isInTutorial, localNow))
-            //    return RaceHudClickAction.OpenEntry;
-
-            //return RaceHudClickAction.None;
         }
 
         public void ClearCurrentRun()
@@ -1107,314 +862,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             TrySave();
         }
 
-        #endregion
-
-        /// <summary>
-        /// DEBUG ONLY.
-        /// Force end current race immediately (as if time is up).
-        /// </summary>
-        public void DebugEndEvent()
-        {
-            ThrowIfNotInitialized();
-
-            Log($"[DEBUG] DebugEndEvent CALLED. State={State}, HasRun={_run != null}");
-
-            if (_run == null)
-            {
-                Log("DebugEndEvent ignored (no active run)");
-                return;
-            }
-
-            if (State != RaceEventState.InRace && State != RaceEventState.Ended && State != RaceEventState.ExtendOffer)
-            {
-                Log($"DebugEndEvent ignored (State={State})");
-                return;
-            }
-
-            var utcNow = NowUtcSeconds();
-            Log($"[DEBUG] Force End. Before: EndUtc={_run.EndUtcSeconds}, utcNow={utcNow}");
-
-            // Force end time to now
-            _run.EndUtcSeconds = utcNow;
-
-            FinalizeIfTimeUp(utcNow);
-
-            Log($"[DEBUG] Force End DONE. After: EndUtc={_run.EndUtcSeconds}, State={State}");
-
-            RequestEndedPopup();
-        }
-
-        /// <summary>
-        /// DEBUG ONLY:
-        /// Clear claimed run and reset flow so a new race can be started immediately.
-        /// </summary>
-        public void Debug_ResetAfterClaimAndAllowNewRun()
-        {
-            ThrowIfNotInitialized();
-
-            Log("[DEBUG] ResetAfterClaim");
-
-            // Clear run
-            _run = null;
-            _save.CurrentRun = null;
-
-            // Reset flow
-            _sm.SetState(RaceEventState.Idle);
-            _save.LastFlowState = RaceEventState.Idle;
-
-            // Remove gating so Entry can show again
-            _save.LastEntryShownWindowId = 0;
-            _save.LastJoinLocalUnixSeconds = 0;
-            _save.SearchingStartUtcSeconds = 0;
-
-            TrySave();
-
-            PublishRunUpdated(); // notify UI to clear standings
-        }
-
-        public void Debug_ForceClearAll()
-        {
-            ThrowIfNotInitialized();
-
-            Log("[DEBUG] FORCE CLEAR ALL RACE EVENT DATA");
-
-            // 1. Clear runtime
-            _run = null;
-
-            // 2. Clear save data liên quan run
-            _save.CurrentRun = null;
-            _save.LastFlowState = RaceEventState.Idle;
-
-            // 3. Reset state machine
-            _sm.SetState(RaceEventState.Idle);
-
-            // 4. Clear ALL gating / cooldown / window
-            _save.LastEntryShownWindowId = 0;
-            _save.LastJoinLocalUnixSeconds = 0;
-            _save.SearchingStartUtcSeconds = 0;
-
-            // 6. Persist
-            TrySave();
-
-            // 7. Notify UI / presenters
-            PublishRunUpdated();               // clear leaderboard, HUD
-
-            Log("[DEBUG] FORCE CLEAR DONE");
-        }
-
-        private static void NormalizeComposition(ref RaceBotComposition comp, int need)
-        {
-            // nếu GD set tổng khác need: ưu tiên giữ Boss/Normal, phần còn lại đổ vào Noob
-            var sum = comp.Total;
-            if (sum == need) return;
-
-            if (sum < need)
-            {
-                comp.NoobCount += (need - sum);
-                return;
-            }
-
-            // sum > need => giảm Noob trước, rồi Normal, cuối cùng Boss
-            int extra = sum - need;
-
-            int dec = Math.Min(comp.NoobCount, extra);
-            comp.NoobCount -= dec; extra -= dec;
-
-            dec = Math.Min(comp.NormalCount, extra);
-            comp.NormalCount -= dec; extra -= dec;
-
-            dec = Math.Min(comp.BossCount, extra);
-            comp.BossCount -= dec; extra -= dec;
-        }
-
-        private int AddFromPool(
-            RaceRun run,
-            IReadOnlyList<BotProfile> pool,
-            BotPersonality type,
-            int count,
-            long utcNow,
-            bool allowDuplicate = false)
-        {
-            if (count <= 0) return 0;
-            if (pool == null || pool.Count == 0) return 0;
-
-            // lọc candidates theo personality
-            var candidates = new List<BotProfile>();
-            for (int i = 0; i < pool.Count; i++)
-                if (pool[i].Personality == type) candidates.Add(pool[i]);
-
-            if (candidates.Count == 0) return 0;
-
-            int added = 0;
-
-            // pick random
-            for (int k = 0; k < count; k++)
-            {
-                var pick = candidates[UnityEngine.Random.Range(0, candidates.Count)];
-
-                if (!allowDuplicate)
-                {
-                    bool existed = false;
-                    for (int j = 0; j < run.Opponents.Count; j++)
-                        if (run.Opponents[j].Id == pick.Id) { existed = true; break; }
-
-                    if (existed) { k--; continue; }
-                }
-
-                run.Opponents.Add(pick.ToRaceParticipant(utcNow));
-                added++;
-            }
-
-            return added;
-        }
-
-        private void EnsurePersonalityCount(
-                                            RaceRun run,
-                                            IReadOnlyList<BotProfile> levelFilteredPool,
-                                            IReadOnlyList<BotProfile> fullPool,
-                                            BotPersonality type,
-                                            int targetCount,
-                                            long utcNow)
-        {
-            if (targetCount <= 0) return;
-
-            int current = 0;
-            for (int i = 0; i < run.Opponents.Count; i++)
-                if (run.Opponents[i].IsBot && run.Opponents[i].Id.StartsWith(type.ToString().ToLowerInvariant()))
-                    current++;
-
-            int need = targetCount - current;
-            if (need <= 0) return;
-
-            // Ưu tiên: trong pool đã filter theo level trước
-            need -= AddFromPool(run, levelFilteredPool, type, need, utcNow, allowDuplicate: false);
-
-            // Nếu vẫn thiếu: lấy từ full pool (bất chấp level)
-            if (need > 0)
-                need -= AddFromPool(run, fullPool, type, need, utcNow, allowDuplicate: true);
-        }
-
-        private void FillRemainingClosestLevel(
-                                                RaceRun run,
-                                                IReadOnlyList<BotProfile> fullPool,
-                                                int remaining,
-                                                long utcNow,
-                                                int playerLevel)
-        {
-            if (remaining <= 0) return;
-            if (fullPool == null || fullPool.Count == 0) return;
-
-            // lấy cụm closest (hàm sẵn có)
-            var closestPool = FilterByPlayerLevelOrClosest(fullPool, playerLevel);
-            if (closestPool == null || closestPool.Count == 0) closestPool = new List<BotProfile>(fullPool);
-
-            // allowDuplicate true để guarantee đủ
-            for (int i = 0; i < remaining; i++)
-            {
-                var pick = closestPool[UnityEngine.Random.Range(0, closestPool.Count)];
-                run.Opponents.Add(pick.ToRaceParticipant(utcNow));
-            }
-        }
-
-        private int AddAnyFromPool(
-                                    RaceRun run,
-                                    IReadOnlyList<BotProfile> pool,
-                                    int count,
-                                    long utcNow,
-                                    bool allowDuplicate = true)
-        {
-            if (count <= 0) return 0;
-            if (pool == null || pool.Count == 0) return 0;
-
-            int added = 0;
-
-            for (int k = 0; k < count; k++)
-            {
-                var pick = pool[UnityEngine.Random.Range(0, pool.Count)];
-
-                if (!allowDuplicate)
-                {
-                    bool existed = false;
-                    for (int j = 0; j < run.Opponents.Count; j++)
-                        if (run.Opponents[j].Id == pick.Id) { existed = true; break; }
-                    if (existed) { k--; continue; }
-                }
-
-                run.Opponents.Add(pick.ToRaceParticipant(utcNow));
-                added++;
-            }
-
-            return added;
-        }
-
-        private static List<BotProfile> FilterByPlayerLevel(
-            IReadOnlyList<BotProfile> pool,
-            int playerLevel)
-        {
-            var list = new List<BotProfile>();
-            for (int i = 0; i < pool.Count; i++)
-            {
-                var b = pool[i];
-                if (playerLevel >= b.MinPlayerLevel &&
-                    playerLevel <= b.MaxPlayerLevel)
-                {
-                    list.Add(b);
-                }
-            }
-            return list;
-        }
-
-        private static List<BotProfile> FilterByPlayerLevelOrClosest(
-           IReadOnlyList<BotProfile> pool,
-           int playerLevel)
-        {
-            // 1) try exact match
-            var exact = new List<BotProfile>();
-            for (int i = 0; i < pool.Count; i++)
-            {
-                var b = pool[i];
-                if (playerLevel >= b.MinPlayerLevel && playerLevel <= b.MaxPlayerLevel)
-                    exact.Add(b);
-            }
-            if (exact.Count > 0) return exact;
-
-            // 2) fallback: closest range
-            int best = int.MaxValue;
-            for (int i = 0; i < pool.Count; i++)
-            {
-                var b = pool[i];
-                int d = DistanceToRange(playerLevel, b.MinPlayerLevel, b.MaxPlayerLevel);
-                if (d < best) best = d;
-            }
-
-            // collect all bots with best distance (giữ đa dạng)
-            var closest = new List<BotProfile>();
-            for (int i = 0; i < pool.Count; i++)
-            {
-                var b = pool[i];
-                int d = DistanceToRange(playerLevel, b.MinPlayerLevel, b.MaxPlayerLevel);
-                if (d == best) closest.Add(b);
-            }
-
-            return closest;
-        }
-
-        private static void Shuffle<T>(IList<T> list)
-        {
-            for (int i = list.Count - 1; i > 0; i--)
-            {
-                int j = UnityEngine.Random.Range(0, i + 1);
-                (list[i], list[j]) = (list[j], list[i]);
-            }
-        }
-
-        private static int DistanceToRange(int level, int min, int max)
-        {
-            if (level < min) return min - level;
-            if (level > max) return level - max;
-            return 0; // inside range
-        }
-
         private int ClampConfigIndex(int i) => Math.Clamp(i, 0, _configs.Count - 1);
         private RaceEventConfig GetConfigByIndex(int i) => _configs[ClampConfigIndex(i)];
         private RaceEventConfig ActiveConfigForRunOrCursor()
@@ -1431,7 +878,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             return GetConfigByIndex(eligibleIndex);
         }
-
         private int GetEligibleCursorIndex()
         {
             // cursor base (đã clamp)
@@ -1443,7 +889,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             return i;
         }
-
         public SearchingPlan GetSearchingSnapshot()
         {
             var total = ActiveConfigForRunOrCursor().SearchingDurationSeconds;
@@ -1456,7 +901,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             var remaining = System.Math.Max(0, total - elapsed);
             return new SearchingPlan(remaining);
         }
-
         public string FormatHMS(TimeSpan t)
         {
             if (t < TimeSpan.Zero) t = TimeSpan.Zero;
@@ -1465,7 +909,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             int s = t.Seconds;
             return $"{h:00}:{m:00}:{s:00}";
         }
-
         public string FormatHM(TimeSpan t)
         {
             if (t < TimeSpan.Zero) t = TimeSpan.Zero;
@@ -1479,24 +922,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             return $"{h}h{m:00}'";
         }
 
-
-        public LeaderboardSnapshot GetLeaderboardSnapshot(int topN)
+        public LeaderboardSnapshot BuildLeaderboardSnapshot(int topN)
         {
             ThrowIfNotInitialized();
-            if (_run == null) return LeaderboardSnapshot.Empty();
-
-            // 1) lấy standings theo cùng 1 rule duy nhất
-            // nếu RaceStandings.Compute đã sort đúng theo rule finishUtc / progress thì dùng lại luôn
-            var standings = RaceStandings.Compute(_run.AllParticipants(), _run.GoalLevels);
-
-            // 2) lấy rank player
-            int playerRank = standings.FindIndex(p => p.Id == _run.Player.Id) + 1;
-            if (playerRank <= 0) playerRank = standings.Count;
-
-            // 3) topN
-            var top = standings.Count <= topN ? standings : standings.GetRange(0, topN);
-
-            return new LeaderboardSnapshot(top, playerRank, _run.Player.HasFinished);
+            return _raceEngine.BuildLeaderboardSnapshot(_run, topN);
         }
 
         public string ExtractNumberSuffix(string input)
@@ -1533,314 +962,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             return _currentPopupTypeOpen == type;
         }
 
-        #region DEBUG
-        /// <summary>
-        /// DEBUG ONLY:
-        /// Advance bots by exactly one logical step (≈ +1 level for active bots).
-        /// No real time involved.
-        /// </summary>
-        public void Debug_AdvanceBots()
-        {
-            ThrowIfNotInitialized();
-            if (_run == null) { Log("[DEBUG] AdvanceBots ignored (no run)."); return; }
-
-            var utcNow = NowUtcSeconds();
-
-            // baseUtc = mốc mới nhất trong run (để cộng dồn đúng)
-            long baseUtc = utcNow;
-            baseUtc = Math.Max(baseUtc, _run.Player.LastUpdateUtcSeconds);
-            for (int i = 0; i < _run.Opponents.Count; i++)
-                baseUtc = Math.Max(baseUtc, _run.Opponents[i].LastUpdateUtcSeconds);
-
-            // Step: chọn theo BOT CHẬM NHẤT để chắc chắn có ai đó đủ +1
-            // (dùng Max thay vì Avg để tránh trường hợp 341s < secPerLevel của bot)
-            double maxSecPerLevel = 0;
-            int alive = 0;
-            foreach (var b in _run.Opponents)
-            {
-                if (b.HasFinished) continue;
-                maxSecPerLevel = Math.Max(maxSecPerLevel, b.AvgSecondsPerLevel);
-                alive++;
-            }
-
-            if (alive == 0) { Log("[DEBUG] AdvanceBots ignored (all bots finished)."); return; }
-
-            long stepSeconds = (long)Math.Ceiling(maxSecPerLevel) + 1;
-
-            // Retry up to N steps until something changes
-            const int maxTries = 60; // 60 * ~6 phút = ~6 giờ (đủ thoát sleep 5h)
-            int beforeHash = ComputeProgressHash2(_run);
-
-            long fakeUtc = baseUtc;
-            for (int attempt = 1; attempt <= maxTries; attempt++)
-            {
-                fakeUtc += stepSeconds;
-
-                GhostBotSimulator.SimulateBots(_run, fakeUtc);
-
-                int afterHash = ComputeProgressHash2(_run);
-                if (afterHash != beforeHash)
-                {
-                    _debugFakeUtcSeconds = fakeUtc;
-                    _save.CurrentRun = _run;
-                    TrySave();
-                    PublishRunUpdated();
-
-                    var dt = DateTimeOffset.FromUnixTimeSeconds(fakeUtc).UtcDateTime;
-                    Log($"[DEBUG] AdvanceBots => changed=TRUE after {attempt} step(s), step={stepSeconds}s, fakeUtc={fakeUtc} (UTC {dt:HH:mm})");
-                    return;
-                }
-            }
-
-            // Nếu tới đây vẫn false: hoặc bots đang bị rule chặn (sleep/stuck cực lâu) hoặc hash thiếu field
-            var dt2 = DateTimeOffset.FromUnixTimeSeconds(fakeUtc).UtcDateTime;
-            Log($"[DEBUG] AdvanceBots => changed=FALSE after {maxTries} tries. step={stepSeconds}s fakeUtc={fakeUtc} (UTC {dt2:HH:mm}). Consider logging sleep/stuck/progress remainder.");
-        }
-
-        /// <summary>
-        /// DEBUG ONLY:
-        /// Advance exactly ONE bot by ~1 logical step (≈ +1 level).
-        /// botIndex: index in _run.Opponents
-        /// </summary>
-        public void Debug_AdvanceSingleBot(int botIndex)
-        {
-            ThrowIfNotInitialized();
-
-            if (_run == null)
-            {
-                Log("[DEBUG] AdvanceSingleBot ignored (no run).");
-                return;
-            }
-
-            if (botIndex < 0 || botIndex >= _run.Opponents.Count)
-            {
-                Log($"[DEBUG] AdvanceSingleBot invalid index={botIndex}");
-                return;
-            }
-
-            var bot = _run.Opponents[botIndex];
-
-            if (bot.HasFinished)
-            {
-                Log($"[DEBUG] AdvanceSingleBot ignored (bot {botIndex} already finished).");
-                return;
-            }
-
-            // baseUtc = mốc mới nhất để tránh time đi lùi
-            long baseUtc = NowUtcSeconds();
-            baseUtc = Math.Max(baseUtc, bot.LastUpdateUtcSeconds);
-            baseUtc = Math.Max(baseUtc, _run.Player.LastUpdateUtcSeconds);
-
-            // stepSeconds = đủ để bot này chắc chắn +1 level
-            long stepSeconds = (long)Math.Ceiling(bot.AvgSecondsPerLevel) + 1;
-
-            const int maxTries = 30;
-            int beforeLevel = bot.LevelsCompleted;
-
-            long fakeUtc = baseUtc;
-
-            for (int attempt = 1; attempt <= maxTries; attempt++)
-            {
-                fakeUtc += stepSeconds;
-
-                // ⚠️ chỉ simulate bot này
-                GhostBotSimulator.SimulateSingleBot(bot, _run.GoalLevels, fakeUtc);
-
-                if (bot.LevelsCompleted > beforeLevel)
-                {
-                    bot.LastUpdateUtcSeconds = fakeUtc;
-
-                    _debugFakeUtcSeconds = fakeUtc;
-                    _save.CurrentRun = _run;
-                    TrySave();
-                    PublishRunUpdated();
-
-                    var dt = DateTimeOffset.FromUnixTimeSeconds(fakeUtc).UtcDateTime;
-                    Log($"[DEBUG] AdvanceSingleBot index={botIndex} SUCCESS after {attempt} try, level={bot.LevelsCompleted}, fakeUtc={fakeUtc} (UTC {dt:HH:mm})");
-                    return;
-                }
-            }
-
-            Log($"[DEBUG] AdvanceSingleBot index={botIndex} FAILED (no progress after {maxTries} tries)");
-        }
-
-
-        /// <summary>
-        /// DEBUG ONLY:
-        /// Advance bots from NOW until race end time.
-        /// Guarantees no infinite loop.
-        /// </summary>
-        public void Debug_AdvanceBotsToEnd()
-        {
-            ThrowIfNotInitialized();
-            if (_run == null)
-            {
-                Log("[DEBUG] AdvanceBotsToEnd ignored (no run).");
-                return;
-            }
-
-            var nowUtc = NowUtcSeconds();
-
-            // Base time: mốc mới nhất giữa now / player / bots
-            long baseUtc = nowUtc;
-            baseUtc = Math.Max(baseUtc, _run.Player.LastUpdateUtcSeconds);
-            for (int i = 0; i < _run.Opponents.Count; i++)
-                baseUtc = Math.Max(baseUtc, _run.Opponents[i].LastUpdateUtcSeconds);
-
-            // Nếu race đã hết giờ → finalize luôn
-            if (baseUtc >= _run.EndUtcSeconds)
-            {
-                FinalizeIfTimeUp(baseUtc);
-                Log("[DEBUG] AdvanceBotsToEnd: race already ended.");
-                return;
-            }
-
-            // Tính stepSeconds dựa trên bot chậm nhất (giống Debug_AdvanceBots)
-            double maxSecPerLevel = 0;
-            int alive = 0;
-            foreach (var b in _run.Opponents)
-            {
-                if (b.HasFinished) continue;
-                maxSecPerLevel = Math.Max(maxSecPerLevel, b.AvgSecondsPerLevel);
-                alive++;
-            }
-
-            if (alive == 0)
-            {
-                FinalizeIfTimeUp(baseUtc);
-                Log("[DEBUG] AdvanceBotsToEnd: all bots already finished.");
-                return;
-            }
-
-            long stepSeconds = (long)Math.Ceiling(maxSecPerLevel) + 1;
-
-            // Safety guard: tránh infinite loop
-            const int maxSteps = 2000;
-
-            int beforeHash = ComputeProgressHash2(_run);
-            long fakeUtc = baseUtc;
-            int steps = 0;
-
-            while (fakeUtc < _run.EndUtcSeconds && steps < maxSteps)
-            {
-                fakeUtc += stepSeconds;
-                if (fakeUtc > _run.EndUtcSeconds)
-                    fakeUtc = _run.EndUtcSeconds;
-
-                GhostBotSimulator.SimulateBots(_run, fakeUtc);
-
-                int afterHash = ComputeProgressHash2(_run);
-
-                // Nếu không còn thay đổi nữa → break sớm
-                if (afterHash == beforeHash)
-                {
-                    bool anyAlive = false;
-                    foreach (var b in _run.Opponents)
-                    {
-                        if (!b.HasFinished)
-                        {
-                            anyAlive = true;
-                            break;
-                        }
-                    }
-
-                    if (!anyAlive)
-                        break;
-                }
-
-                beforeHash = afterHash;
-                steps++;
-            }
-
-            // Finalize race nếu tới end
-            FinalizeIfTimeUp(fakeUtc);
-
-            _save.CurrentRun = _run;
-            TrySave();
-            PublishRunUpdated();
-
-            var dt = DateTimeOffset.FromUnixTimeSeconds(fakeUtc).UtcDateTime;
-            _debugFakeUtcSeconds = fakeUtc;
-            Log($"[DEBUG] AdvanceBotsToEnd done. steps={steps}, fakeUtc={fakeUtc} (UTC {dt:HH:mm})");
-        }
-
-
-        private static int ComputeProgressHash2(RaceRun run)
-        {
-            unchecked
-            {
-                int h = 17;
-                h = h * 31 + run.Player.LevelsCompleted;
-                h = h * 31 + (run.Player.HasFinished ? 1 : 0);
-
-                for (int i = 0; i < run.Opponents.Count; i++)
-                {
-                    h = h * 31 + run.Opponents[i].LevelsCompleted;
-                    h = h * 31 + (run.Opponents[i].HasFinished ? 1 : 0);
-                }
-                return h;
-            }
-        }
-
-        public void Debug_PlayerWinUsingFakeUtc()
-        {
-            ThrowIfNotInitialized();
-            if (_run == null) { Log("[DEBUG] PlayerWin ignored (no run)"); return; }
-            if (State != RaceEventState.InRace) { Log($"[DEBUG] PlayerWin ignored (State={State})"); return; }
-
-            // if never used fakeUtc yet, fallback to real utcNow
-            long utcNow = (_debugFakeUtcSeconds > 0) ? _debugFakeUtcSeconds
-                                                     : NowUtcSeconds();
-
-            _run.Player.LevelsCompleted += 1;
-            _run.Player.LastUpdateUtcSeconds = utcNow;
-
-            if (!_run.Player.HasFinished && _run.Player.LevelsCompleted >= _run.GoalLevels)
-            {
-                _run.Player.HasFinished = true;
-                _run.Player.FinishedUtcSeconds = utcNow;
-                UnityEngine.Debug.Log($"[RACE][PLAYER FINISH][FAKEUTC] levels={_run.Player.LevelsCompleted}/{_run.GoalLevels} finishUtc={utcNow}");
-
-                EndRaceNowAndFinalize();
-                return;
-            }
-
-            GhostBotSimulator.SimulateBots(_run, utcNow);
-
-            _save.CurrentRun = _run;
-            TrySave();
-            PublishRunUpdated();
-
-            FinalizeIfTimeUp(utcNow);
-        }
-
-        #endregion
-
-        private HudMode GetHudMode(bool isInTutorial, DateTime localNow)
-        {
-            var hud = GetHudStatus(localNow);
-
-            // 1) HUD-driven first
-            if (!hud.IsVisible) return HudMode.Hidden;
-            if (hud.IsLocked) return HudMode.Locked;
-
-            // 2) State overrides (business meaning)
-            if (State == RaceEventState.Ended && CanClaim())
-                return HudMode.Claim;
-
-            if (State == RaceEventState.ExtendOffer)
-                return HudMode.Claim;
-
-            if (State == RaceEventState.InRace)
-                return HudMode.InRace;
-
-            // 3) Entry gate (Idle/others)
-            if (ShouldShowEntryPopup(isInTutorial, localNow))
-                return HudMode.Entry;
-
-            return HudMode.Sleeping;
-        }
-
         public bool ConsumeFirstTimePopup(PopupType type)
         {
             ThrowIfNotInitialized();
@@ -1871,69 +992,122 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             }
         }
 
-    }
-
-    public readonly struct LeaderboardSnapshot
-    {
-        public readonly IReadOnlyList<RaceParticipant> Top;
-        public readonly int PlayerRank;      // 1-based
-        public readonly bool PlayerFinished;
-
-        public LeaderboardSnapshot(IReadOnlyList<RaceParticipant> top, int playerRank, bool playerFinished)
+        #region ELIGIBILITY
+        private RaceEligibilityContext BuildEligibilityContext(DateTime localNow, RaceEventConfig cfg)
         {
-            Top = top;
-            PlayerRank = playerRank;
-            PlayerFinished = playerFinished;
+            return new RaceEligibilityContext(
+                            state: State,
+                            currentLevel: CurrentLevel,
+                            localNow: localNow,
+                            lastJoinLocalUnixSeconds: _save.LastJoinLocalUnixSeconds,
+                            lastEntryShownWindowId: _save.LastEntryShownWindowId,
+                            config: cfg
+                            );
         }
 
-        public static LeaderboardSnapshot Empty() => new LeaderboardSnapshot(Array.Empty<RaceParticipant>(), 0, false);
-    }
-
-    public readonly struct RaceHudStatus
-    {
-        public readonly bool IsVisible;
-        public readonly bool IsSleeping;     // icon xám + zzz
-        public readonly bool HasClaim;       // show "!" rung / claim now
-        public readonly TimeSpan Remaining;  // countdown text
-        public readonly string Label;        // optional: "NEXT RACE"
-        public readonly bool ShowTextCountdown;
-
-        public readonly bool IsLocked;
-        public readonly int UnlockAtLevel;
-
-        public RaceHudStatus(bool isVisible, bool isSleeping, bool hasClaim, TimeSpan remaining, string label, bool showTextCountdown)
-         : this(isVisible, isSleeping, hasClaim, remaining, label, showTextCountdown, isLocked: false, unlockAtLevel: 0) { }
-
-        public RaceHudStatus(bool isVisible, bool isSleeping, bool hasClaim, TimeSpan remaining, string label, bool showTextCountdown,
-                        bool isLocked, int unlockAtLevel)
+        /// <summary>
+        /// Eligible thuần: dùng cho HUD / enable nút / manual open entry.
+        /// KHÔNG chứa rule "shown once/day".
+        /// </summary>
+        public bool IsEligibleForEntry(DateTime localNow)
         {
-            IsVisible = isVisible;
-            IsSleeping = isSleeping;
-            HasClaim = hasClaim;
-            Remaining = remaining;
-            Label = label;
-            ShowTextCountdown = showTextCountdown;
-
-            IsLocked = isLocked;
-            UnlockAtLevel = unlockAtLevel;
+            ThrowIfNotInitialized();
+            var cfg = ActiveConfigForRunOrCursor();
+            var ctx = BuildEligibilityContext(localNow, cfg);
+            return _raceEligibility.IsEligible(ctx);
         }
-    }
 
-    public enum RaceHudClickAction
-    {
-        None,
-        OpenEntry,
-        OpenInRace,
-        OpenEnded
-    }
+        /// <summary>
+        /// Auto show entry chỉ 1 lần/window: chỉ dùng trong OnEnterMain.
+        /// </summary>
+        private bool ShouldAutoShowEntryOnEnterMain(DateTime localNow)
+        {
+            var cfg = ActiveConfigForRunOrCursor();
+            var ctx = BuildEligibilityContext(localNow, cfg);
 
-    public enum HudMode
-    {
-        Hidden,
-        Locked,
-        Claim,       // ended & can claim OR extend offer
-        InRace,
-        Entry,
-        Sleeping     // next in / nothing to do
+            if (!_raceEligibility.IsEligible(ctx)) return false;
+
+            int windowId = _raceScheduler.ComputeWindowId(localNow, cfg.ResetHourLocal);
+            if (_save.LastEntryShownWindowId == windowId) return false;
+
+            // Mark ngay để đảm bảo "1 lần/ngày"
+            _save.LastEntryShownWindowId = windowId;
+            TrySave();
+            return true;
+        }
+        #endregion
+
+        #region HUD Status
+        public RaceHudStatus BuildHudStatus(DateTime localNow)
+        {
+            ThrowIfNotInitialized();
+
+            var ctx = BuildHudContext(localNow);
+
+            return _raceHudPresenter.BuildHudStatus(ctx);
+        }
+
+        public RaceHudStatus BuildHudStatus(DateTime localNow, out object context)
+        {
+            ThrowIfNotInitialized();
+
+            // Build struct context (không alloc)
+            var ctx = BuildHudContext(localNow);
+
+            // Reuse token (không boxing)
+            _hudContextToken.Set(ctx);
+            context = _hudContextToken;
+
+            return _raceHudPresenter.BuildHudStatus(ctx);
+        }
+
+        private RaceHudContext BuildHudContext(DateTime localNow)
+        {
+            RaceEventConfig cfg = ActiveConfigForRunOrCursor();
+            long utcNow = NowUtcSeconds();
+
+            // next reset theo config (local time)
+            DateTime nextResetLocal = _raceScheduler.ComputeNextResetLocal(localNow, cfg.ResetHourLocal);
+
+            // HUD cần biết có claim được không + có entry được không
+            bool canClaim = CanClaim();
+            bool isEligible = IsEligibleForEntry(localNow);
+
+            var ctx = new RaceHudContext(
+                        localNow: localNow,
+                        utcNow: utcNow,
+                        currentLevel: CurrentLevel,
+                        state: State,
+                        cfg: cfg,
+                        run: _run,
+                        canClaim: canClaim,
+                        isEligible: isEligible,
+                        nextResetLocal: nextResetLocal
+                    );
+
+            return ctx;
+        }
+
+        public RaceHudClickAction BuildHudClickAction(DateTime localNow)
+        {
+            ThrowIfNotInitialized();
+
+            return _raceHudPresenter.BuildHudClickAction(GetHudMode(localNow));
+        }
+
+        private HudMode GetHudMode(DateTime localNow)
+        {
+            ThrowIfNotInitialized();
+
+            var hud = BuildHudStatus(localNow, out object context);
+
+            if (context is HudContextToken token)
+                return _raceHudPresenter.BuildHudMode(token.Ctx, hud);
+
+            // fallback an toàn
+            return HudMode.Hidden;
+        }
+
+        #endregion
     }
 }

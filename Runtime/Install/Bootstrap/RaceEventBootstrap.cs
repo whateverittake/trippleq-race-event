@@ -238,7 +238,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             _svc.OnLevelWin(
                 newLevel: _svc.CurrentLevel + 1,
-                isInTutorial: false,
                 localNow: DateTime.Now
             );
         }
@@ -255,7 +254,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             _svc.OnLevelWin(
                 newLevel: newLevel,
-                isInTutorial: isInTutorial,
                 localNow: localNow
             );
         }
@@ -318,7 +316,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         public void RequestOpenPopupFirstTime()
         {
-            _svc.ForceRequestEntryPopup(false,DateTime.UtcNow);
+            _svc.ForceRequestEntryPopup(DateTime.UtcNow);
         }
 
         public bool IsInTestMode()

@@ -34,7 +34,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void RefreshNow()
         {
             var localNow = DateTime.Now;
-            var s = _svc.GetHudStatus(localNow);
+            var s = _svc.BuildHudStatus(localNow);
 
             // map từ svc HudStatus -> view RaceHudStatus
             var status = new RaceHudStatus(
@@ -51,11 +51,14 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private void OnClick()
         {
             if (_isInTutorial()) return;
+
             var now = DateTime.Now;
-            var action = _svc.GetHudClickAction(_isInTutorial(), now);
+
+            var action = _svc.BuildHudClickAction(now);
+
             if (action == RaceHudClickAction.None)
             {
-                var hud = _svc.GetHudStatus(now);
+                var hud = _svc.BuildHudStatus(now);
                 if (hud.IsLocked)
                 {
                     OnClickLocked?.Invoke();
@@ -75,7 +78,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
                 case RaceHudClickAction.OpenEntry:
                     _svc.RequestEntryPopup(
-                        _isInTutorial?.Invoke() ?? false,
                         DateTime.Now
                     );
                     break;

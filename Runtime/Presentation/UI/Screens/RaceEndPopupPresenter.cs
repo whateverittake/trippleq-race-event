@@ -129,7 +129,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private void SetUpData(RaceRun run)
         {
             // 1) leaderboard snapshot (source of truth)
-            var snap = _svc.GetLeaderboardSnapshot(5); // hoặc _leaderBoardRanks.Length nếu view expose
+            var snap = _svc.BuildLeaderboardSnapshot(5); // hoặc _leaderBoardRanks.Length nếu view expose
 
             // 2) reward: chỉ dựa vào rank khi canClaim hoặc rank1 special
             RaceReward reward = null;

@@ -282,7 +282,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void HandleHudLockedClick()
         {
-            var hud = _svc.GetHudStatus(DateTime.Now);
+            var hud = _svc.BuildHudStatus(DateTime.Now);
 
             // Option A: toast nhẹ
             //_bootstrap.ShowToast($"Unlocks at level {hud.UnlockAtLevel}");

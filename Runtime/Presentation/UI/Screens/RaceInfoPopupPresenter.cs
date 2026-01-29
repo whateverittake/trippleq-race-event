@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TrippleQ.UiKit;
 using static TrippleQ.Event.RaceEvent.Runtime.PopupTypes;
 
@@ -7,6 +7,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     public sealed class RaceInfoPopupPresenter : BasePopupPresenter<IRaceInfoPopupView>
     {
         private readonly RaceEventService _svc;
+
+        private float _hudAccum = 0f;
+
         public RaceInfoPopupPresenter(RaceEventService svc)
         {
             _svc = svc;
@@ -29,8 +32,13 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void Tick(float deltaTime)
         {
             if (!IsBound) return;
+
+            _hudAccum += deltaTime;
+            if (_hudAccum < 1f) return;     // 1s update 1 lần
+            _hudAccum = 0f;
+
             var localNow = DateTime.Now;
-            var s = _svc.GetHudStatus(localNow);
+            var s = _svc.BuildHudStatus(localNow);
 
             View.SetTimeStatus(_svc.FormatHMS(s.Remaining));
         }
