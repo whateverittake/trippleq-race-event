@@ -86,11 +86,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public bool IsEligible(in RaceEligibilityContext ctx)
         {
             // 1) State gating
-            // Không eligible nếu đang ở các state thuộc flow/claim/offer
+            // Busy -> not eligible
+            // vNext Eligibility chỉ dùng cho Entry/Join (Idle),
+            // không dùng để quyết định StartNextRound khi Ended.
             if (ctx.State == RaceEventState.Searching ||
-                ctx.State == RaceEventState.InRace ||
-                ctx.State == RaceEventState.Ended ||
-                ctx.State == RaceEventState.ExtendOffer)
+                ctx.State == RaceEventState.InRace)
                 return false;
 
             var cfg = ctx.Cfg;

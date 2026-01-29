@@ -20,7 +20,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 return;
             }
 
-            if (State != RaceEventState.InRace && State != RaceEventState.Ended && State != RaceEventState.ExtendOffer)
+            if (State != RaceEventState.InRace && State != RaceEventState.Ended)
             {
                 Log($"DebugEndEvent ignored (State={State})");
                 return;

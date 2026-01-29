@@ -10,6 +10,22 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     /// </summary>
     public sealed class RaceScheduler
     {
+        public readonly struct RoundTimeSnapshot
+        {
+            public readonly DateTime NextResetLocal;
+            public readonly DateTime RoundEndLocal;
+            public readonly DateTime NextAllowedStartLocal;
+            public readonly bool IsOverflow;
+
+            public RoundTimeSnapshot(DateTime nextResetLocal, DateTime roundEndLocal, DateTime nextAllowedStartLocal)
+            {
+                NextResetLocal = nextResetLocal;
+                RoundEndLocal = roundEndLocal;
+                NextAllowedStartLocal = nextAllowedStartLocal;
+                IsOverflow = nextAllowedStartLocal >= nextResetLocal;
+            }
+        }
+
         /// <summary>
         /// Kết quả snapshot thời gian dùng cho Service/HUD/Eligibility.
         /// </summary>
@@ -39,6 +55,37 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 HasShownEntryThisWindow = hasShownEntryThisWindow;
             }
         }
+
+        /// <summary>
+        /// EvaluateGapFromBaseUtc:
+        /// Tính NextAllowedStart dựa trên 1 mốc baseUtcSeconds (policy-dependent).
+        ///
+        /// - Policy cũ: base = roundEndUtcSeconds (gap tính từ End).
+        /// - Policy vNext (strict): base = claimedUtcSeconds (gap tính từ Claim).
+        /// </summary>
+        public RoundTimeSnapshot EvaluateGapFromBaseUtc(
+        DateTime localNow,
+        int resetHourLocal,
+        long baseUtcSeconds,
+        int gapMinutes)
+        {
+            var nextResetLocal = ComputeNextResetLocal(localNow, resetHourLocal);
+
+            // Convert baseUtc -> local DateTime (device local)
+            var baseLocal = DateTimeOffset.FromUnixTimeSeconds(baseUtcSeconds).LocalDateTime;
+
+            var nextAllowedStartLocal = baseLocal.AddMinutes(Math.Max(0, gapMinutes));
+
+            return new RoundTimeSnapshot(nextResetLocal, baseLocal, nextAllowedStartLocal);
+        }
+
+        // Backward-compatible wrapper (gap from End).
+        public RoundTimeSnapshot EvaluateRoundTime(
+            DateTime localNow,
+            int resetHourLocal,
+            long roundEndUtcSeconds,
+            int gapMinutes)
+            => EvaluateGapFromBaseUtc(localNow, resetHourLocal, roundEndUtcSeconds, gapMinutes);
 
         // Tính mốc reset kế tiếp theo giờ local (ví dụ reset 4:00).
         // Nếu đã qua 4:00 hôm nay → reset kế tiếp là 4:00 ngày mai.

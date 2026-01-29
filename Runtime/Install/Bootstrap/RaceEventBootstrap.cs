@@ -261,16 +261,12 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void BindWatchAdsToExtend(Action<Action<bool>> watchAdsAction)
         {
             // chống bind nhiều lần
-            if (_boundWatchAdsHandler != null)
-                _svc.OnExtendAdsRequested -= _boundWatchAdsHandler;
 
             _boundWatchAdsHandler = onResult =>
             {
                 // delegate hết cho framework/project
                 watchAdsAction?.Invoke(onResult);
             };
-
-            _svc.OnExtendAdsRequested += _boundWatchAdsHandler;
         }
 
         public void OnRequestExtend(Action<int, Action<bool>> spendGoldHandler)

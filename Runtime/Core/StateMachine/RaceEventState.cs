@@ -4,12 +4,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     {
         Disabled,
         Idle,
-        Eligible,
         Searching,
         InRace,
         Ended,
-        Claimable,
         Cooldown,
-        ExtendOffer
     }
 }

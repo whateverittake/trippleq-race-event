@@ -18,13 +18,17 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     {
         private readonly HudContextToken _hudContextToken = new HudContextToken();
 
+        private const int RoundGapMinutes = 15;
+        private const int RoundHours = 8;
+        private const string PlayerId = "player";
+        private const string PlayerDisplayNameDefault = "You";
+
         // ---- Events for UI/Bootstrap ----
         public event Action<string>? OnLog;
         public event Action<RaceEventState, RaceEventState>? OnStateChanged;
         public event Action<PopupRequest>? OnPopupRequested;
         public event Action<RaceRun?>? OnRunUpdated;
         public event Action<RaceReward>? OnRewardGranted;
-        public event Action<Action<bool>>? OnExtendAdsRequested;
 
         // ---- Core ----
         private readonly RaceEventStateMachine _sm = new RaceEventStateMachine();
@@ -91,7 +95,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 : DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         }
 
-        private DateTime NowLocal() => DateTime.Now;
+        public DateTime NowLocal() => DateTime.Now;
 
         private long NowLocalUnixSeconds() => DateTimeOffset.Now.ToUnixTimeSeconds();
 
@@ -143,7 +147,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 PublishRunUpdated();
             }
 
-            CleanupExpiredRunIfNeeded(NowUtcSeconds());
+            CleanupExpiredRunIfNeeded(NowLocal(), NowUtcSeconds());
 
             CurrentLevel = initialLevel;
 
@@ -157,11 +161,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             {
                 // already ended, just resume
                 _sm.SetState(RaceEventState.Ended);
-            }
-            else if (_save.LastFlowState == RaceEventState.ExtendOffer)
-            {
-                // nếu lần trước đang offer extend mà user thoát app
-                _sm.SetState(RaceEventState.ExtendOffer);
             }
             else if (utcNow >= _run.EndUtcSeconds)
             {
@@ -197,7 +196,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             OnPopupRequested = null;
             OnRunUpdated = null;
             OnRewardGranted=null;
-            OnExtendAdsRequested=null;
         }
 
         private void TrySave()
@@ -254,6 +252,25 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _run.ClaimedRank = _run.FinalPlayerRank;
             _run.ClaimedWinnerId = _run.WinnerId;
 
+            // vNext strict policy: gap 15 phút chỉ bắt đầu SAU khi claim.
+            // NextAllowedStart = ClaimedTime + 15m (không phải End + 15m).
+            _run.NextAllowedStartUtcSeconds =
+                _run.ClaimedUtcSeconds + (long)TimeSpan.FromMinutes(RoundGapMinutes).TotalSeconds;
+
+            // Overflow guard: nếu claim muộn khiến gap vượt qua reset ngày -> clear run, không chain sang ngày mới.
+            // (Chống overflow ngày theo spec vNext)
+            var cfg = ActiveConfigForRunOrCursor();
+            var localNow = NowLocal();
+
+            var snap = _raceScheduler.EvaluateGapFromBaseUtc(
+                localNow,
+                cfg.ResetHourLocal,
+                _run.ClaimedUtcSeconds,
+                gapMinutes: RoundGapMinutes);
+
+            // IMPORTANT: không được ClearRun trước khi grant reward, nếu không user mất reward.
+            bool overflowAfterClaim = snap.IsOverflow;
+
             var reward = GetRewardForRank(_run.FinalPlayerRank);
 
             // Persist
@@ -274,60 +291,12 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             PublishRunUpdated();
             Log($"Claimed. Rank={_run.FinalPlayerRank}, RewardCoins={reward.Gold}");
 
-            // ClearRunAfterClaim();
-        }
-
-        public void RequestWatchAdsToExtend()
-        {
-            ThrowIfNotInitialized();
-
-            if (!CanExtend1H())
+            // Nếu overflow -> clear SAU claim/grant để không chain qua ngày mới.
+            if (overflowAfterClaim)
             {
-                Log("WatchAdsToExtend rejected (not extendable)");
+                ClearRun("Overflow after claim (gap crosses daily reset)");
                 return;
             }
-
-            if (OnExtendAdsRequested == null)
-            {
-                Log("WatchAdsToExtend rejected (no ads handler bound)");
-                return;
-            }
-
-            // ask host to show ad, host calls back with success/fail
-            OnExtendAdsRequested.Invoke(success =>
-            {
-                if (!success)
-                {
-                    Log("WatchAdsToExtend failed (ad not completed)");
-                    return;
-                }
-
-                Extend1H(); // ✅ reuse existing logic
-            });
-        }
-
-        public ExtendOfferModel GetExtendOffer()
-        {
-            ThrowIfNotInitialized();
-            if (!CanExtend1H()) return ExtendOfferModel.None();
-
-            var cfg = ActiveConfigForRunOrCursor();
-
-            if (!cfg.AllowExtend1H) return ExtendOfferModel.None();
-
-            return cfg.ExtendPayType switch
-            {
-                ExtendPayType.WatchAds => new ExtendOfferModel(
-                                                        ExtendPayType.WatchAds,
-                                                        coinCost: 0,
-                                                        extendHours: cfg.ExtendHours),
-                ExtendPayType.Coins => new ExtendOfferModel(
-                                                        ExtendPayType.Coins, 
-                                                        coinCost: Math.Max(0, cfg.ExtendCoinCost), 
-                                                        extendHours: cfg.ExtendHours),
-
-                _ => ExtendOfferModel.None()
-            };
         }
 
         // --------------------
@@ -361,6 +330,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             if (_run != null && State == RaceEventState.InRace)
             {
                 GhostBotSimulator.SimulateBots(_run, utcNow);
+                _lastSimulatedUtc = utcNow;
                 _save.CurrentRun = _run;
                 TrySave();
                 PublishRunUpdated();
@@ -424,13 +394,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // If currently searching/in race, don't downgrade to Eligible/Idle
             if (State == RaceEventState.Searching ||
                 State == RaceEventState.InRace ||
-                State == RaceEventState.Ended||
-                State == RaceEventState.ExtendOffer)
+                State == RaceEventState.Ended)
                 return;
 
-            var isEligible = IsEligibleForEntry(localNow);
-            // We separate 'Eligible' from just 'Idle' to let UI/HUD react later
-            _sm.SetState(isEligible ? RaceEventState.Eligible : RaceEventState.Idle);
+            // vNext: luôn giữ Idle. UI/HUD dùng ctx.IsEligible để hiển thị Entry / Sleeping.
+            _sm.SetState(RaceEventState.Idle);
         }
 
         // --------------------
@@ -471,6 +439,58 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             PublishRunUpdated();
         }
 
+        public void TryJoinOrStart(DateTime localNow)
+        {
+            ThrowIfNotInitialized();
+
+            // 1) If already has a run:
+            if (_run != null)
+            {
+                switch (State)
+                {
+                    case RaceEventState.InRace:
+                        // treat as "open main"
+                        RequestInRacePopup();
+                        return;
+
+                    case RaceEventState.Searching:
+                        // searching in progress -> ignore
+                        Log("TryJoinOrStart ignored (already searching)");
+                        return;
+
+                    case RaceEventState.Ended:
+                        // strict next round gate
+                        if (CanStartNextRoundNow(localNow))
+                        {
+                            StartNextRound(localNow);
+                        }
+                        else
+                        {
+                            // not ready -> show ended screen (claim / next-in)
+                            RequestEndedPopup();
+                            Log("TryJoinOrStart rejected (ended but not ready for next round)");
+                        }
+                        return;
+
+                    case RaceEventState.Idle:
+                    default:
+                        // run != null but idle is weird, still route to open ended/inrace based on run flags
+                        if (_run.IsFinalized) RequestEndedPopup();
+                        else RequestInRacePopup();
+                        return;
+                }
+            }
+
+            // 2) No run -> this is Round 0 join flow
+            if (State != RaceEventState.Idle)
+            {
+                Log($"TryJoinOrStart rejected (State={State}, no run but not idle)");
+                return;
+            }
+
+            JoinRace(localNow); // existing method (eligibility check inside)
+        }
+
         /// <summary>
         /// Called by UI if player closes entry popup without joining.
         /// Still counts as "shown once/day" in this step (common LiveOps behavior).
@@ -494,33 +514,44 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 return;
             }
 
+            if (_run != null)
+            {
+                // Safety: prevent overwriting an existing run
+                Log("ConfirmSearchingFinished rejected (_run already exists)");
+                _sm.SetState(RaceEventState.InRace);
+                _save.LastFlowState = RaceEventState.InRace;
+                RequestInRacePopup();
+                return;
+            }
+
             _sm.SetState(RaceEventState.InRace);
             _save.LastFlowState = RaceEventState.InRace;
 
             // Create run NOW
+            var cfg = ActiveConfigForRunOrCursor();
             var utcNow = NowUtcSeconds();
-            var startUtc = utcNow;
-
             var localNow = NowLocal();
-            var dailyEndLocal = _raceScheduler.ComputeNextResetLocal(localNow, ActiveConfigForRunOrCursor().ResetHourLocal); // theo config
-            var endUtc = new DateTimeOffset(dailyEndLocal).ToUnixTimeSeconds();
-            //var endUtc = utcNow + (long)TimeSpan.FromHours(ActiveConfigForRunOrCursor().DurationHours).TotalSeconds;
-            var cfgIndex = _save.ConfigCursor;
 
-            _run = RaceRun.CreateNew(
-                runId: Guid.NewGuid().ToString("N"),
-                startUtc: startUtc,
-                endUtc: endUtc,
-                goalLevels: ActiveConfigForRunOrCursor().GoalLevels,
-                playersCount: ActiveConfigForRunOrCursor().PlayersPerRace
-            );
+            int windowId = _raceScheduler.ComputeWindowId(localNow, cfg.ResetHourLocal);
+            var nextResetLocal = _raceScheduler.ComputeNextResetLocal(localNow, cfg.ResetHourLocal);
+            long dayResetUtc = new DateTimeOffset(nextResetLocal).ToUnixTimeSeconds();
 
-            _run.ConfigIndex = cfgIndex;
+            var startUtc = utcNow;
+            long endUtc = utcNow + (long)TimeSpan.FromHours(RoundHours).TotalSeconds; // Round0 fixed 8h
+
+            _run = RaceRun.CreateNew(Guid.NewGuid().ToString("N"), startUtc, endUtc, cfg.GoalLevels, cfg.PlayersPerRace);
+            _run.ConfigIndex = _save.ConfigCursor;
+
+            _run.WindowId = windowId;
+            _run.RoundIndex = 0;
+            _run.DayResetUtcSeconds = dayResetUtc;
+
+            _run.NextAllowedStartUtcSeconds = 0;
 
             _run.Player = new RaceParticipant
             {
-                Id = "player",
-                DisplayName = "You",
+                Id = PlayerId,
+                DisplayName = PlayerDisplayNameDefault,
                 AvatarId = ExtractNumberSuffix(AvatarSystem.AvatarServiceLocator.Service.GetSelectedAvatarId().value.Value),
                 LevelsCompleted = 0,
                 LastUpdateUtcSeconds = utcNow,
@@ -545,6 +576,20 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // Show main race screen
             RequestPopup(new PopupRequest(PopupType.Main));
             Log("Searching finished -> InRace -> Main");
+        }
+
+        public bool CanStartNextRoundNow(DateTime localNow)
+        {
+            if (_run == null) return false; // chưa có run -> join bình thường
+            if (State != RaceEventState.Ended) return false;
+
+            if (!_run.HasClaimed) return false;
+
+            var utcNow = NowUtcSeconds();
+            if (_run.NextAllowedStartUtcSeconds > 0 && utcNow < _run.NextAllowedStartUtcSeconds)
+                return false;
+
+            return CanStartNextRound(localNow);
         }
 
         public void RequestPopup(PopupType type)
@@ -574,9 +619,19 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             OnRunUpdated?.Invoke(_run);
         }
 
-        private void CleanupExpiredRunIfNeeded(long utcNow)
+        private void CleanupExpiredRunIfNeeded(DateTime localNow, long utcNow)
         {
             if (_run == null) return;
+
+            // vNext: window boundary guard (chống giữ run qua ngày/reset)
+            // Ưu tiên check windowId trước khi làm các logic khác để tránh finalize/extend sai ngày.
+            var cfg = ActiveConfigForRunOrCursor();
+            int windowNow = _raceScheduler.ComputeWindowId(localNow, cfg.ResetHourLocal);
+            if (_run.WindowId != 0 && windowNow != _run.WindowId)
+            {
+                ClearRun("Window changed");
+                return;
+            }
 
             // data invalid -> clear ngay
             if (_run.PlayersCount <= 0 || _run.GoalLevels <= 0)
@@ -586,19 +641,21 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             }
 
             // If time is up: DO NOT clear.
-            // Instead: finalize (so it becomes claimable).
+            // - If NOT finished => restart same round (no claim, no reward).
+            // - If finished => finalize -> Ended/Claimable.
             if (utcNow >= _run.EndUtcSeconds)
             {
                 if (!_run.IsFinalized)
                 {
-                    FinalizeIfTimeUp(utcNow); // will set state Ended + save
+                    FinalizeIfTimeUp(utcNow);// may restart or finalize depending on HasFinished
                 }
                 return;
             }
 
             // Optional: if already claimed and too old -> clear
-            // Example: keep ended run for 24h after claim then clear
-            if (_run.IsFinalized && _run.HasClaimed)
+            // NOTE (vNext 3 rounds/day): KHÔNG clear theo KeepClaimedHours khi còn round kế tiếp.
+            // Chỉ apply khi đã ở round cuối (RoundIndex >= 2) hoặc game muốn cleanup sau khi kết ngày.
+            if (_run.IsFinalized && _run.HasClaimed && _run.RoundIndex >= 2)
             {
                 var keepSeconds = (long)TimeSpan.FromHours(ActiveConfigForRunOrCursor().KeepClaimedHours).TotalSeconds; // add config or const
                 if (_run.ClaimedUtcSeconds > 0 && utcNow >= _run.ClaimedUtcSeconds + keepSeconds)
@@ -606,6 +663,132 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                     ClearRun("Claimed run expired");
                 }
             }
+        }
+
+        // --------------------
+        // vNext: Next Round (strict: claim -> gap -> user start)
+        // --------------------
+
+        /// <summary>
+        /// Chỉ dùng cho vNext 3 rounds/day:
+        /// - Phải Ended + HasClaimed
+        /// - Đã qua gap (Claimed + 15m)
+        /// - Không overflow ngày
+        /// - RoundIndex < 2
+        /// </summary>
+        public bool CanStartNextRound(DateTime localNow)
+        {
+            ThrowIfNotInitialized();
+            if (_run == null) return false;
+
+            // Must be current window (chống giữ run cũ qua ngày)
+            var cfg = ActiveConfigForRunOrCursor();
+            int windowNow = _raceScheduler.ComputeWindowId(localNow, cfg.ResetHourLocal);
+            if (_run.WindowId != 0 && windowNow != _run.WindowId) return false;
+
+            if (_run.RoundIndex >= 2) return false;
+            if (!_run.IsFinalized) return false;
+            if (!_run.HasClaimed) return false; // strict policy
+
+            // Gap gate: based on Claim time
+            long utcNow = NowUtcSeconds();
+            if (_run.NextAllowedStartUtcSeconds <= 0) return false;
+            if (utcNow < _run.NextAllowedStartUtcSeconds) return false;
+
+            // Overflow gate: claim+gap không được vượt qua next reset local
+            // (re-check để an toàn khi QA đổi giờ local trong TestMode)
+            var snap = _raceScheduler.EvaluateGapFromBaseUtc(
+                localNow,
+                cfg.ResetHourLocal,
+                _run.ClaimedUtcSeconds,
+                gapMinutes: RoundGapMinutes);
+
+            if (snap.IsOverflow) return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Start round kế tiếp theo policy:
+        /// Ended -> Claim -> Gap -> (User Start Next Round)
+        ///
+        /// Implementation tối giản: tạo RaceRun mới cho round mới (đỡ reset state/bot/progress phức tạp).
+        /// </summary>
+        public void StartNextRound(DateTime localNow)
+        {
+            ThrowIfNotInitialized();
+
+            if (!CanStartNextRound(localNow))
+            {
+                Log("StartNextRound rejected (not ready)");
+                return;
+            }
+
+            var cfg = ActiveConfigForRunOrCursor();
+            long utcNow = NowUtcSeconds();
+
+            int nextRoundIndex = Math.Clamp(_run!.RoundIndex + 1, 0, 2);
+
+            // Compute end time by round index
+            long endUtc;
+            if (nextRoundIndex <= 1)
+            {
+                endUtc = utcNow + (long)TimeSpan.FromHours(RoundHours).TotalSeconds;
+            }
+            else
+            {
+                // Round2 ends at day reset (captured when round0 was created)
+                endUtc = _run.DayResetUtcSeconds > 0
+                    ? _run.DayResetUtcSeconds
+                    : new DateTimeOffset(_raceScheduler.ComputeNextResetLocal(localNow, cfg.ResetHourLocal)).ToUnixTimeSeconds();
+            }
+
+            // Preserve some stable info
+            string playerDisplayName = _run.Player.DisplayName;
+            string playerAvatarId = _run.Player.AvatarId;
+            int windowId = _run.WindowId;
+            long dayResetUtc = _run.DayResetUtcSeconds;
+            int configIndex = _run.ConfigIndex;
+
+            // Create a fresh run for the new round
+            var newRun = RaceRun.CreateNew(Guid.NewGuid().ToString("N"), utcNow, endUtc, cfg.GoalLevels, cfg.PlayersPerRace);
+            newRun.ConfigIndex = configIndex;
+            newRun.WindowId = windowId;
+            newRun.RoundIndex = nextRoundIndex;
+            newRun.DayResetUtcSeconds = dayResetUtc;
+
+            // strict policy: gap only after next claim
+            newRun.NextAllowedStartUtcSeconds = 0;
+
+            newRun.Player = new RaceParticipant
+            {
+                Id = PlayerId,
+                DisplayName = playerDisplayName,
+                AvatarId = playerAvatarId,
+                LevelsCompleted = 0,
+                LastUpdateUtcSeconds = utcNow,
+                IsBot = false,
+                HasFinished = false,
+                FinishedUtcSeconds = 0
+            };
+
+            _run = newRun;
+            _save.CurrentRun = _run;
+            _save.LastFlowState = RaceEventState.InRace;
+
+            // Ensure bots for the new round
+            _raceEngine.EnsureBotsSeeded(_run, utcNow, CurrentLevel, cfg, _botPool, out string logString);
+            if (logString != string.Empty)
+                Log(logString);
+
+            TrySave();
+
+            // Move to InRace
+            _sm.SetState(RaceEventState.InRace);
+
+            PublishRunUpdated();
+            RequestPopup(new PopupRequest(PopupType.Main));
+            Log($"StartNextRound accepted. RoundIndex={_run.RoundIndex} EndUtc={_run.EndUtcSeconds}");
         }
 
         private void ClearRun(string reason)
@@ -662,36 +845,23 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             if (utcNow < _run.EndUtcSeconds) return;
 
-            //nếu chưa về đích, chưa extend, và config cho phép => offer extend
-            if (ActiveConfigForRunOrCursor().AllowExtend1H &&!_run.HasExtended && !_run.Player.HasFinished)
+            var cfg = ActiveConfigForRunOrCursor();
+            var localNow = NowLocal();
+
+            // Luồng mới: KHÔNG còn Extend.
+            // Nếu hết giờ mà chưa finish -> restart lại đúng round đó (không reward).
+            if (!_run.Player.HasFinished)
             {
-                _sm.SetState(RaceEventState.ExtendOffer);
-                _save.LastFlowState = RaceEventState.ExtendOffer;
-                TrySave();
-
-                if (IsPopupActive(PopupType.Main)|| IsPopupActive(PopupType.Info))
-                {
-                    RequestPopup(new PopupRequest(PopupType.Ended)); // dùng Ended popup, đổi nút thành Extend/Claimed tuỳ state
-                }
-
-                PublishRunUpdated();
-                Log("Time up -> ExtendOffer");
+                // Không cho claim/reward nếu chưa finish -> restart same round
+                RestartSameRound(localNow, utcNow, "Time up (NOT finished) -> Restart same round");
                 return;
             }
 
+            // 2) Nếu đã finish -> finalize thành Ended/Claimable như cũ
             _run.IsFinalized = true;
             _run.FinalizedUtcSeconds = utcNow;
 
             var standings = RaceStandings.Compute(_run.AllParticipants(), _run.GoalLevels);
-
-            for(int i=0;i < standings.Count; i++)
-            {
-                var standing = standings[i];
-                if(standing.HasFinished== false)
-                {
-                    Log("xx not finish");
-                }
-            }
 
             int rank = standings.FindIndex(p => p.Id == _run.Player.Id) + 1;
             _run.FinalPlayerRank = rank <= 0 ? standings.Count : rank;
@@ -705,11 +875,88 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             if (IsPopupActive(PopupType.Main) || IsPopupActive(PopupType.Info))
             {
-                RequestPopup(new PopupRequest(PopupType.Ended)); // dùng Ended popup, đổi nút thành Extend/Claimed tuỳ state
+                RequestPopup(new PopupRequest(PopupType.Ended)); // dùng Ended popup, đổi nút thành Claimed
             }
 
             PublishRunUpdated();
             Log($"Race finalized. Winner={_run.WinnerId}, PlayerRank={_run.FinalPlayerRank}");
+        }
+
+        /// <summary>
+        /// Restart lại đúng round hiện tại (không reward).
+        /// Reset sạch progress player/bots và thời gian round.
+        /// </summary>
+        private void RestartSameRound(DateTime localNow, long utcNow, string reason)
+        {
+            if (_run == null) return;
+
+            var cfg = ActiveConfigForRunOrCursor();
+
+            // Preserve stable fields
+            int windowId = _run.WindowId;
+            int roundIndex = _run.RoundIndex;
+            long dayResetUtc = _run.DayResetUtcSeconds;
+            int configIndex = _run.ConfigIndex;
+
+            string playerDisplayName = string.IsNullOrEmpty(_run.Player.DisplayName) ? PlayerDisplayNameDefault : _run.Player.DisplayName;
+            string playerAvatarId = _run.Player.AvatarId;
+
+            // Compute end time for this round
+            long endUtc;
+            if (roundIndex <= 1)
+            {
+                endUtc = utcNow + (long)TimeSpan.FromHours(RoundHours).TotalSeconds;
+            }
+            else
+            {
+                // Round2 ends at day reset (if available), else compute next reset
+                endUtc = dayResetUtc > 0
+                    ? dayResetUtc
+                    : new DateTimeOffset(_raceScheduler.ComputeNextResetLocal(localNow, cfg.ResetHourLocal)).ToUnixTimeSeconds();
+            }
+
+            // Create fresh run instance for same round (simplest & safest reset)
+            var newRun = RaceRun.CreateNew(Guid.NewGuid().ToString("N"), utcNow, endUtc, cfg.GoalLevels, cfg.PlayersPerRace);
+            newRun.ConfigIndex = configIndex;
+            newRun.WindowId = windowId;
+            newRun.RoundIndex = roundIndex;
+            newRun.DayResetUtcSeconds = dayResetUtc;
+
+            // strict policy: gap only after claim (claim only after finish)
+            newRun.NextAllowedStartUtcSeconds = 0;
+
+            newRun.Player = new RaceParticipant
+            {
+                Id = PlayerId,
+                DisplayName = playerDisplayName,
+                AvatarId = playerAvatarId,
+                LevelsCompleted = 0,
+                LastUpdateUtcSeconds = utcNow,
+                IsBot = false,
+                HasFinished = false,
+                FinishedUtcSeconds = 0
+            };
+
+            _run = newRun;
+            _save.CurrentRun = _run;
+
+            // Return to InRace
+            _sm.SetState(RaceEventState.InRace);
+            _save.LastFlowState = RaceEventState.InRace;
+
+            // Reseed bots for the restarted round
+            _raceEngine.EnsureBotsSeeded(_run, utcNow, CurrentLevel, cfg, _botPool, out string logString);
+            if (!string.IsNullOrEmpty(logString))
+                Log(logString);
+
+            TrySave();
+            PublishRunUpdated();
+
+            // Bring user back to main race UI if they are already inside race views
+            if (IsPopupActive(PopupType.Main) || IsPopupActive(PopupType.Info) || IsPopupActive(PopupType.Ended))
+                RequestPopup(new PopupRequest(PopupType.Main));
+
+            Log(reason);
         }
 
         private void EndRaceNowAndFinalize()
@@ -742,73 +989,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             };
         }
 
-        public void DeclineExtend()
-        {
-            ThrowIfNotInitialized();
-            if (_run == null) return;
-
-            // Chỉ cho decline khi đang offer
-            if (State != RaceEventState.ExtendOffer) return;
-
-            var utcNow = NowUtcSeconds();
-
-            // Mark để FinalizeIfTimeUp không offer nữa
-            _run.HasExtended = true; // trick: coi như đã "xử lý extend" để không offer lặp
-                                     // hoặc tốt hơn: thêm field _run.HasDeclinedExtend (nếu bạn muốn sạch)
-
-            // Finalize ngay
-            _run.EndUtcSeconds = Math.Min(_run.EndUtcSeconds, utcNow);
-            _run.IsFinalized = false; // đảm bảo finalize chạy
-            FinalizeIfTimeUp(utcNow);
-        }
-
-        public bool CanExtend1H()
-        {
-            ThrowIfNotInitialized();
-            if (_run == null) return false;
-            if (!ActiveConfigForRunOrCursor().AllowExtend1H) return false;
-            if (_run.IsFinalized) return false;
-            if (_run.HasExtended) return false;
-            if (_run.Player.HasFinished) return false;
-            if (State != RaceEventState.ExtendOffer) return false;
-            return true;
-        }
-
-        public void Extend1H()
-        {
-            ThrowIfNotInitialized();
-            if (!CanExtend1H())
-            {
-                Log("Extend1H rejected");
-                return;
-            }
-
-            var utcNow = NowUtcSeconds();
-            var addSeconds = (long)TimeSpan.FromHours(ActiveConfigForRunOrCursor().ExtendHours).TotalSeconds;
-
-            // nếu muốn tính từ end cũ: _run.EndUtcSeconds + addSeconds
-            // nếu muốn tính từ giờ hiện tại: utcNow + addSeconds
-            var newEnd = utcNow + addSeconds;
-
-            if (_run.OriginalEndUtcSeconds <= 0)
-                _run.OriginalEndUtcSeconds = _run.EndUtcSeconds;
-
-            _run.HasExtended = true;
-            _run.ExtendedEndUtcSeconds = newEnd;
-            _run.EndUtcSeconds = newEnd;
-            _debugFakeUtcSeconds = 0;
-            _save.CurrentRun = _run;
-
-            _sm.SetState(RaceEventState.InRace);
-            _save.LastFlowState = RaceEventState.InRace;
-
-            TrySave();
-            PublishRunUpdated();
-
-            RequestPopup(new PopupRequest(PopupType.Main));
-            Log($"Extend1H accepted. NewEndUtc={newEnd}");
-        }
-
         public void ForceRequestEntryPopup(DateTime localNow)
         {
             ThrowIfNotInitialized();
@@ -828,7 +1008,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public void RequestEndedPopup()
         {
             ThrowIfNotInitialized();
-            if (State == RaceEventState.Ended || State == RaceEventState.ExtendOffer)
+            if (State == RaceEventState.Ended)
                 RequestPopup(new PopupRequest(PopupType.Ended));
         }
 
@@ -853,6 +1033,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             // 1. clear runtime
             _run = null;
+            _save.CurrentRun = null;
 
             // 2. reset flow/state
             _sm.SetState(RaceEventState.Idle);
@@ -860,6 +1041,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             // 3. persist
             TrySave();
+
+            // 4. notify UI
+            PublishRunUpdated();
         }
 
         private int ClampConfigIndex(int i) => Math.Clamp(i, 0, _configs.Count - 1);
@@ -1072,6 +1256,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // HUD cần biết có claim được không + có entry được không
             bool canClaim = CanClaim();
             bool isEligible = IsEligibleForEntry(localNow);
+            bool canStartNextRoundNow = CanStartNextRoundNow(localNow);
 
             var ctx = new RaceHudContext(
                         localNow: localNow,
@@ -1081,6 +1266,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                         cfg: cfg,
                         run: _run,
                         canClaim: canClaim,
+                        canStartNextRoundNow: canStartNextRoundNow,
                         isEligible: isEligible,
                         nextResetLocal: nextResetLocal
                     );

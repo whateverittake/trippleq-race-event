@@ -33,6 +33,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public long OriginalEndUtcSeconds;       // để debug / UI
         public long ExtendedEndUtcSeconds;       // 0 nếu chưa extend
 
+        public int WindowId;
+        public int RoundIndex;
+        public long DayResetUtcSeconds;
+        public long NextAllowedStartUtcSeconds;
+
         public IEnumerable<RaceParticipant> AllParticipants()
         {
             yield return Player;

@@ -15,6 +15,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private const string LABEL_NEXT_IN = "Next in: ";
         private const string LABEL_RACE_EVENT = "Race Event";
         private const string LABEL_LVL_PREFIX = "Lvl ";
+        private const string LABEL_START_NEXT = "Start next!";
 
         /// <summary>
         /// Context tối thiểu để tính HUD.
@@ -33,6 +34,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             public readonly bool CanClaim;
             public readonly bool IsEligible;
+            public readonly bool CanStartNextRoundNow;
 
             public readonly DateTime NextResetLocal;
 
@@ -45,7 +47,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 RaceRun? run,
                 bool canClaim,
                 bool isEligible,
-                DateTime nextResetLocal)
+                DateTime nextResetLocal,
+                bool canStartNextRoundNow)
             {
                 LocalNow = localNow;
                 UtcNow = utcNow;
@@ -54,6 +57,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 Cfg = cfg;
                 Run = run;
                 CanClaim = canClaim;
+                CanStartNextRoundNow = canStartNextRoundNow;
                 IsEligible = isEligible;
                 NextResetLocal = nextResetLocal;
             }
@@ -101,9 +105,24 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 );
             }
 
-            // Ended & claimable => highlight claim
+            // Ended + claim
             if (ctx.State == RaceEventState.Ended && ctx.CanClaim)
                 return new RaceHudStatus(true, false, true, TimeSpan.Zero, LABEL_CLAIM_NOW, false);
+
+            // Ended & đã claim & đủ gap => cho start round kế (round 2/3)
+            if (ctx.State == RaceEventState.Ended && !ctx.CanClaim && ctx.CanStartNextRoundNow)
+                return new RaceHudStatus(true, false, false, TimeSpan.Zero, LABEL_START_NEXT, false);
+
+            // Ended & đã claim nhưng chưa đủ gap => show countdown tới next start
+            if (ctx.State == RaceEventState.Ended && ctx.Run != null && ctx.Run.HasClaimed)
+            {
+                var nextUtc = ctx.Run.NextAllowedStartUtcSeconds;
+                if (nextUtc > 0 && ctx.UtcNow < nextUtc)
+                {
+                    var rem = TimeSpan.FromSeconds(nextUtc - ctx.UtcNow);
+                    return new RaceHudStatus(true, true, false, rem, LABEL_NEXT_IN, true);
+                }
+            }
 
             // InRace/Search => show countdown "End in"
             if (ctx.State == RaceEventState.InRace || ctx.State == RaceEventState.Searching)
@@ -112,18 +131,18 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 if (run == null)
                     return new RaceHudStatus(false, false, false, TimeSpan.Zero, LABEL_EMPTY, false);
 
-                // (A) Extended: countdown to EndUtc (≈ 1h)
-                if (run.HasExtended)
+                TimeSpan remaining;
+                // vNext: InRace/Search countdown theo Run.EndUtc (round 0/1: +8h, round2: tới reset)
+                var endUtc = run.EndUtcSeconds;
+                if (endUtc > 0)
                 {
-                    var remainingSec = run.EndUtcSeconds - ctx.UtcNow;
-                    if (remainingSec <= 0)
-                        return new RaceHudStatus(false, false, false, TimeSpan.Zero, LABEL_EMPTY, false);
-
-                    return new RaceHudStatus(true, false, false, TimeSpan.FromSeconds(remainingSec), LABEL_END_IN, true);
+                    remaining = TimeSpan.FromSeconds(Math.Max(0, endUtc - ctx.UtcNow));
+                }
+                else
+                {
+                    remaining = ctx.NextResetLocal - ctx.LocalNow;
                 }
 
-                // (B) Normal: countdown to next reset (local)
-                var remaining = ctx.NextResetLocal - ctx.LocalNow;
                 if (remaining < TimeSpan.Zero) remaining = TimeSpan.Zero;
 
                 return new RaceHudStatus(true, false, false, remaining, LABEL_END_IN, true);
@@ -158,13 +177,12 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // 2) State overrides (business meaning)
             // NOTE: giữ đúng logic cũ:
             // - Ended & can claim => Claim
-            // - ExtendOffer => Claim
             // - InRace => InRace
             if (ctx.State == RaceEventState.Ended && ctx.CanClaim)
                 return HudMode.Claim;
 
-            if (ctx.State == RaceEventState.ExtendOffer)
-                return HudMode.Claim;
+            if (ctx.State == RaceEventState.Ended && !ctx.CanClaim && ctx.CanStartNextRoundNow)
+                return HudMode.StartNext;
 
             if (ctx.State == RaceEventState.InRace)
                 return HudMode.InRace;
@@ -188,6 +206,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             return mode switch
             {
                 HudMode.Claim => RaceHudClickAction.OpenEnded,
+                HudMode.StartNext => RaceHudClickAction.OpenEnded,
                 HudMode.InRace => RaceHudClickAction.OpenInRace,
                 HudMode.Entry => RaceHudClickAction.OpenEntry,
                 _ => RaceHudClickAction.None
@@ -237,7 +256,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     {
         Hidden,
         Locked,
-        Claim,       // ended & can claim OR extend offer
+        Claim,       // ended & can claim
+        StartNext,   // ended & ready to start next round
         InRace,
         Entry,
         Sleeping     // next in / nothing to do

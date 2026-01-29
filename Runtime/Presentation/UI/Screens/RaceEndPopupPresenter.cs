@@ -73,10 +73,27 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             // Setup base data (rank/opponents/reward)
             SetUpData(run);
+
             bool canClaim = _svc.CanClaim();
+
+            //cho nay can handle lai sau
+            //if (_svc.IsClaimable())
+            //{
+            //    ShowClaimButton();
+            //}
+            //else if (_svc.CanStartNextRoundNow(localNow))
+            //{
+            //    ShowStartNextRoundButton();
+            //}
+            //else
+            //{
+            //    ShowCooldownCountdown();
+            //}
+
             View.ShowReward(canClaim);
+
             // Decide which mode this popup is in
-            bool canExtend = _svc.CanExtend1H();
+            bool canExtend = false;
 
             // View state
             bool playerReachGoal = run.Player.HasFinished;
@@ -183,41 +200,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private void OnExtend()
         {
 
-            var offer = _svc.GetExtendOffer();
-
-            if (offer.PayType == ExtendPayType.Coins)
-            {
-                int coinNeed = offer.CoinCost;
-
-                if (RequestExtendByCoins == null)
-                {
-                    NotEnoughCoins?.Invoke();
-                    return;
-                }
-
-                RequestExtendByCoins.Invoke(coinNeed, approved =>
-                {
-                    if (!approved)
-                    {
-                        NotEnoughCoins?.Invoke();
-                        return;
-                    }
-
-                    _svc.Extend1H();
-                    Render();
-                });
-
-                return;
-            }
-
-            // Ads / Free
-            _svc.Extend1H();
-            Render();
         }
 
         private void OnCloseWithoutExtend()
         {
-            _svc.DeclineExtend();
+            
         }
 
         private void OnAcceptNoReward()
@@ -227,26 +214,12 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void OpenLastChance()
         {
-            View.SetViewState(RaceEndPopupState.LastChance, null);
-
-            var offer = _svc.GetExtendOffer();
-
-            switch (offer.PayType)
-            {
-                case ExtendPayType.WatchAds:
-                    View.ShowAdsBtn(true);
-                    break;
-
-                case ExtendPayType.Coins:
-                    View.ShowAdsBtn(false);
-                    View.ShowPayCoins(offer.CoinCost);
-                    break;
-            }
+           
         }
 
         private void OnWatchAds()
         {
-            _svc.RequestWatchAdsToExtend();
+            
         }
     }
 }

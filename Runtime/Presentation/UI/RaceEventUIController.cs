@@ -180,21 +180,21 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                     break;
 
                 case RaceEventState.Searching:
-                    // nếu Searching cần data req thì:
-                    // ShowSearching(new PopupRequest { Type=PopupType.Searching, Searching = _svc.GetSearchingSnapshot() });
-                    // còn không thì HideAll() hoặc giữ trạng thái hiện tại
-                    //HideAll();
-                    //var plan = _svc.GetSearchingSnapshot(); // thêm hàm này ở service (bên dưới)
-                    //ShowSearching(new PopupRequest { PopupType.Searching, Searching = plan });
+                    // optional
                     break;
 
                 case RaceEventState.Ended:
-                case RaceEventState.ExtendOffer:
+                    // vNext: Ended là "finalized snapshot"
+                    // UI mode derive: claimable / cooldown / ready-next vẫn hiển thị End view
                     ShowEnd();
                     break;
-
-                case RaceEventState.Eligible:
-                    ShowEntry();
+                case RaceEventState.Idle:
+                    // vNext: không còn Eligible state
+                    var localNow = _svc.NowLocal(); // single source of truth
+                    if (_svc.IsEligibleForEntry(localNow))
+                        ShowEntry();
+                    else
+                        HideAll();
                     break;
 
                 default:
