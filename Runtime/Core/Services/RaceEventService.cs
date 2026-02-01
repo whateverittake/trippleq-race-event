@@ -254,8 +254,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             // vNext strict policy: gap 15 phút chỉ bắt đầu SAU khi claim.
             // NextAllowedStart = ClaimedTime + 15m (không phải End + 15m).
-            _run.NextAllowedStartUtcSeconds =
-                _run.ClaimedUtcSeconds + (long)TimeSpan.FromMinutes(RoundGapMinutes).TotalSeconds;
+            // NOTE: chỉ có gap/start-next cho Round 0/1. Sau Round 2/3 (RoundIndex>=2)
+            // thì HUD phải countdown tới reset 4h sáng, KHÔNG được hiển thị 15p gap.
+            _run.NextAllowedStartUtcSeconds = (_run.RoundIndex < 2)
+                 ? _run.ClaimedUtcSeconds + (long)TimeSpan.FromMinutes(RoundGapMinutes).TotalSeconds
+                 : 0;
 
             // Overflow guard: nếu claim muộn khiến gap vượt qua reset ngày -> clear run, không chain sang ngày mới.
             // (Chống overflow ngày theo spec vNext)
@@ -652,13 +655,26 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 return;
             }
 
-            // Optional: if already claimed and too old -> clear
-            // NOTE (vNext 3 rounds/day): KHÔNG clear theo KeepClaimedHours khi còn round kế tiếp.
-            // Chỉ apply khi đã ở round cuối (RoundIndex >= 2) hoặc game muốn cleanup sau khi kết ngày.
+            // vNext (3 rounds/day): Sau khi claim round cuối (RoundIndex>=2), KHÔNG được clear sớm.
+            // Lý do: nếu clear sớm thì HUD rơi về Idle và (IsEligible==true) sẽ hiện "Race Event"/Entry,
+            // trong khi đúng UX là phải countdown tới reset 4h sáng.
+            // -> Chỉ clear khi qua reset (window changed đã handle) hoặc khi host muốn force cleanup.
             if (_run.IsFinalized && _run.HasClaimed && _run.RoundIndex >= 2)
             {
-                var keepSeconds = (long)TimeSpan.FromHours(ActiveConfigForRunOrCursor().KeepClaimedHours).TotalSeconds; // add config or const
-                if (_run.ClaimedUtcSeconds > 0 && utcNow >= _run.ClaimedUtcSeconds + keepSeconds)
+                // Nếu có DayResetUtcSeconds thì dùng để clear đúng mốc; nếu không thì để window guard xử lý.
+                if (_run.DayResetUtcSeconds > 0 && utcNow >= _run.DayResetUtcSeconds)
+                {
+                    ClearRun("Day reset reached");
+                }
+                return;
+            }
+
+            // Optional: if already claimed (non-final round) and too old -> clear
+            // (giữ nguyên policy cũ nếu bạn muốn cleanup snapshot sớm cho round 0/1)
+            if (_run.IsFinalized && _run.HasClaimed && _run.RoundIndex < 2)
+            {
+                var keepSeconds = (long)TimeSpan.FromHours(ActiveConfigForRunOrCursor().KeepClaimedHours).TotalSeconds;
+                if (keepSeconds > 0 && _run.ClaimedUtcSeconds > 0 && utcNow >= _run.ClaimedUtcSeconds + keepSeconds)
                 {
                     ClearRun("Claimed run expired");
                 }
@@ -1196,6 +1212,13 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public bool IsEligibleForEntry(DateTime localNow)
         {
             ThrowIfNotInitialized();
+
+            // vNext semantics: "EligibleForEntry" nghĩa là *có thể mở flow Entry để join/start ngay bây giờ*.
+            // Nếu đang có run hoặc đang ở state khác Idle (Searching/InRace/Ended) thì KHÔNG được Entry.
+            // (StartNext là một flow riêng, dùng CanStartNextRoundNow).
+            if (_run != null) return false;
+            if (State != RaceEventState.Idle) return false;
+
             var cfg = ActiveConfigForRunOrCursor();
             var ctx = BuildEligibilityContext(localNow, cfg);
             return _raceEligibility.IsEligible(ctx);
@@ -1206,10 +1229,15 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         /// </summary>
         private bool ShouldAutoShowEntryOnEnterMain(DateTime localNow)
         {
-            var cfg = ActiveConfigForRunOrCursor();
-            var ctx = BuildEligibilityContext(localNow, cfg);
+            // Auto show chỉ hợp lệ khi đang Idle và chưa có run.
+            // Nếu đang Ended/InRace/Search thì tuyệt đối không auto-open Entry.
+            if (_run != null) return false;
+            if (State != RaceEventState.Idle) return false;
 
-            if (!_raceEligibility.IsEligible(ctx)) return false;
+            var cfg = ActiveConfigForRunOrCursor();
+
+            // Reuse cùng semantics với HUD/Entry
+            if (!IsEligibleForEntry(localNow)) return false;
 
             int windowId = _raceScheduler.ComputeWindowId(localNow, cfg.ResetHourLocal);
             if (_save.LastEntryShownWindowId == windowId) return false;

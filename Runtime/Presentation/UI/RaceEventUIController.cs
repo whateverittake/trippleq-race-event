@@ -96,6 +96,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _hudPresenter = new RaceEventHudWidgetPresenter(_svc, _hudWidgetView, isInTutorial);
 
             _hudPresenter.OnClickLocked += HandleHudLockedClick;
+            _hudPresenter.OnClickTimeGap += HandleHudTimeGapClick;
 
             _entryPresenter = new RaceEntryPopupPresenter(_svc, isInTutorial);
             _searchingPresenter= new RaceSearchingPopupPresenter(_svc);
@@ -132,6 +133,12 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             {
                 _hudPresenter.OnClickLocked -= HandleHudLockedClick;
             }
+
+            if(_hudPresenter != null)
+            {
+                _hudPresenter.OnClickTimeGap -= HandleHudTimeGapClick;
+            }
+
             _hudPresenter?.Dispose();
             _hudPresenter = null;
 
@@ -278,6 +285,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private void HandleTutorialMainRaceEvent()
         {
             //show tut
+        }
+
+        private void HandleHudTimeGapClick()
+        {
+
         }
 
         private void HandleHudLockedClick()

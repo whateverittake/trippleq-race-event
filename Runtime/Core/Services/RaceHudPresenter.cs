@@ -15,7 +15,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private const string LABEL_NEXT_IN = "Next in: ";
         private const string LABEL_RACE_EVENT = "Race Event";
         private const string LABEL_LVL_PREFIX = "Lvl ";
-        private const string LABEL_START_NEXT = "Start next!";
+        private const string LABEL_START_NEXT = "Next round";
 
         /// <summary>
         /// Context tối thiểu để tính HUD.
@@ -113,8 +113,17 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             if (ctx.State == RaceEventState.Ended && !ctx.CanClaim && ctx.CanStartNextRoundNow)
                 return new RaceHudStatus(true, false, false, TimeSpan.Zero, LABEL_START_NEXT, false);
 
+            // Ended & đã claim round cuối (3/3) => countdown tới reset 4h sáng (không có gap)
+            if (ctx.State == RaceEventState.Ended && ctx.Run != null && ctx.Run.HasClaimed && ctx.Run.RoundIndex >= 2)
+            {
+                var remainingToReset = ctx.NextResetLocal - ctx.LocalNow;
+                if (remainingToReset < TimeSpan.Zero) remainingToReset = TimeSpan.Zero;
+                return new RaceHudStatus(true, true, false, remainingToReset, LABEL_NEXT_IN, true);
+        }
+
             // Ended & đã claim nhưng chưa đủ gap => show countdown tới next start
-            if (ctx.State == RaceEventState.Ended && ctx.Run != null && ctx.Run.HasClaimed)
+            // NOTE: chỉ áp dụng cho Round 0/1. Round 2/3 phải countdown tới reset (4h sáng), không có gap.
+            if (ctx.State == RaceEventState.Ended && ctx.Run != null && ctx.Run.HasClaimed && ctx.Run.RoundIndex < 2)
             {
                 var nextUtc = ctx.Run.NextAllowedStartUtcSeconds;
                 if (nextUtc > 0 && ctx.UtcNow < nextUtc)
@@ -187,6 +196,14 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             if (ctx.State == RaceEventState.InRace)
                 return HudMode.InRace;
 
+            // 3) Cooldown / gap (HUD already decided it's "sleeping")
+            // IMPORTANT:
+            // - During gap (ex: 15min after claim), ctx.IsEligible can still be true (unlocked),
+            //   but UI must NOT open Entry.
+            // - If hud.IsSleeping == true, click should become None (info only), not OpenEntry.
+            if (hud.IsSleeping)
+                return HudMode.Sleeping;
+
             // 3) Entry gate (Idle/others)
             if (ctx.IsEligible)
                 return HudMode.Entry;
@@ -206,7 +223,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             return mode switch
             {
                 HudMode.Claim => RaceHudClickAction.OpenEnded,
-                HudMode.StartNext => RaceHudClickAction.OpenEnded,
+                // StartNext = đủ điều kiện bắt đầu round kế => UI phải đi vào flow Entry/Start, không phải xem kết quả
+                HudMode.StartNext => RaceHudClickAction.OpenEntryNextRound,
                 HudMode.InRace => RaceHudClickAction.OpenInRace,
                 HudMode.Entry => RaceHudClickAction.OpenEntry,
                 _ => RaceHudClickAction.None
@@ -249,7 +267,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         None,
         OpenEntry,
         OpenInRace,
-        OpenEnded
+        OpenEnded,
+        OpenEntryNextRound
     }
 
     public enum HudMode

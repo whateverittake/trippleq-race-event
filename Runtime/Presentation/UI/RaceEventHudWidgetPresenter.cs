@@ -12,6 +12,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private float _accum;
 
         public event Action OnClickLocked;
+        public event Action OnClickTimeGap;
 
         public RaceEventHudWidgetPresenter(RaceEventService svc, RaceEventHudWidgetView view, Func<bool>? isInTutorial = null)
         {
@@ -56,16 +57,6 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             var action = _svc.BuildHudClickAction(now);
 
-            if (action == RaceHudClickAction.None)
-            {
-                var hud = _svc.BuildHudStatus(now);
-                if (hud.IsLocked)
-                {
-                    OnClickLocked?.Invoke();
-                }
-                return;
-            }
-
             switch (action)
             {
                 case RaceHudClickAction.OpenEnded:
@@ -81,7 +72,22 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                         DateTime.Now
                     );
                     break;
+                case RaceHudClickAction.OpenEntryNextRound:
+                    _svc.ForceRequestEntryPopup(DateTime.Now);
+                    break;
                 case RaceHudClickAction.None:
+                    var hud = _svc.BuildHudStatus(now);
+
+                    if (hud.IsLocked)
+                    {
+                        OnClickLocked?.Invoke();
+                    }
+                    else if (hud.IsSleeping)
+                    {
+                        OnClickTimeGap?.Invoke();
+                    }
+
+                    break;
                 default:
                     Debug.Log("Not handle on click: " + action);
                     // sleeping / locked
