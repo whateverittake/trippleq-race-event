@@ -99,13 +99,18 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void UpdateReward(int rewardRankId)
         {
-            if(rewardRankId <= 0 || rewardRankId>3)
+            //if(rewardRankId <= 0 || rewardRankId>3)
+            //{
+            //    //disable reward Obj
+            //    _rewardObj.SetActive(false);
+            //    return;
+            //}
+
+            if(rewardRankId <= 0)
             {
-                //disable reward Obj
-                _rewardObj.SetActive(false);
-                return;
+                rewardRankId = 5;
             }
-             
+
             //endable reward icon follow id
             _rewardObj.SetActive(true);
             for (int i = 0; i < _rewardIconArr.Length; i++)
