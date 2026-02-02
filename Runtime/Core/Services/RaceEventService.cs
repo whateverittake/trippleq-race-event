@@ -877,6 +877,16 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _run.IsFinalized = true;
             _run.FinalizedUtcSeconds = utcNow;
 
+            foreach (var p in _run.AllParticipants())
+            {
+                if (!p.HasFinished) continue;
+
+                if (p.FinishedUtcSeconds > 0) continue;
+
+                if (p.LastUpdateUtcSeconds > 0) p.FinishedUtcSeconds = p.LastUpdateUtcSeconds;
+                else p.FinishedUtcSeconds = utcNow;
+            }
+
             var standings = RaceStandings.Compute(_run.AllParticipants(), _run.GoalLevels);
 
             int rank = standings.FindIndex(p => p.Id == _run.Player.Id) + 1;

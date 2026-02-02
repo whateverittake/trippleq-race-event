@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
@@ -361,9 +362,20 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             if (run == null) return LeaderboardSnapshot.Empty();
 
+            // Normalize: finished nhưng thiếu FinishedUtcSeconds -> fallback bằng LastUpdateUtcSeconds
+            // Tránh case bot finish trước nhưng time=0 khiến UI đảo rank khi player finish.
+            var all = run.AllParticipants();
+
+            foreach (var p in all)
+            {
+                if (!p.HasFinished) continue;
+                if (p.FinishedUtcSeconds > 0) continue;
+                if (p.LastUpdateUtcSeconds > 0) p.FinishedUtcSeconds = p.LastUpdateUtcSeconds;
+            }
+
             // 1) lấy standings theo cùng 1 rule duy nhất
             // nếu RaceStandings.Compute đã sort đúng theo rule finishUtc / progress thì dùng lại luôn
-            var standings = RaceStandings.Compute(run.AllParticipants(), run.GoalLevels);
+            var standings = RaceStandings.Compute(all, run.GoalLevels);
 
             // 2) lấy rank player
             int playerRank = standings.FindIndex(p => p.Id == run.Player.Id) + 1;

@@ -109,7 +109,13 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // Standings: finished trước (theo time), rồi unfinished (theo level desc)
             var standings = allParticipants
                 .OrderBy(p => p.HasFinished ? 0 : 1)
-                .ThenBy(p => p.HasFinished ? p.FinishedUtcSeconds : long.MaxValue)
+                .ThenBy(p => 
+                { 
+                    if (!p.HasFinished) return long.MaxValue;
+                    if (p.FinishedUtcSeconds > 0) return p.FinishedUtcSeconds;
+                    if (p.LastUpdateUtcSeconds > 0) return p.LastUpdateUtcSeconds;
+                    return long.MaxValue;
+                })
                 .ThenByDescending(p => p.HasFinished ? int.MinValue : p.LevelsCompleted)
                 .ThenBy(p => orderIndex[p]) // ổn định
                 .ToList();

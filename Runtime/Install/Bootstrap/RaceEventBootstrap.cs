@@ -194,9 +194,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void Update()
         {
-            //if (_svc == null) return;
-            //if(_svc.IsInitialized) _svc.Tick(Time.deltaTime);
-
+            if (_svc == null) return;
+            if (_svc.IsInitialized) _svc.Tick(Time.deltaTime);
+            //CheatPlayerWinUsingFakeUtc();
+            //CheatResetRace();
             //if (Input.GetKeyDown(KeyCode.P)) // debug
             //{
             //    CheatResetRace();
@@ -212,13 +213,13 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             //    _svc.Debug_AdvanceBotsToEnd();
             //}
 
-            //if(Input.GetKeyDown(KeyCode.I)) // debug
+            //if (Input.GetKeyDown(KeyCode.I)) // debug
             //{
             //    //DebugWinLevel();
             //    CheatPlayerWinUsingFakeUtc();
             //}
 
-            //if(Input.GetKeyDown(KeyCode.U)) // debug
+            //if (Input.GetKeyDown(KeyCode.U)) // debug
             //{
             //    CheatEndRace();
             //}
