@@ -517,6 +517,8 @@ MonoBehaviour:
   _claimBang: {fileID: 1370167708479733156}
   _activeObj: {fileID: 1521353046181680301}
   _sleepingObj: {fileID: 8803496985504042364}
+  _pressScale: 0.92
+  _pressDuration: 0.06
 --- !u!114 &7485327728862074739
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -603,8 +605,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: RACE
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: b1d6051a4025fef438caff6d01fa2fdb, type: 2}
-  m_sharedMaterial: {fileID: 2827316262997670408, guid: b1d6051a4025fef438caff6d01fa2fdb, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 019ae8f2522433444af3f0f19cc2630a, type: 2}
+  m_sharedMaterial: {fileID: 2827316262997670408, guid: 019ae8f2522433444af3f0f19cc2630a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -639,6 +641,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0

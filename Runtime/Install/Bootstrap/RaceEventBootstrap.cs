@@ -194,44 +194,44 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         private void Update()
         {
-            if (_svc == null) return;
-            if(_svc.IsInitialized) _svc.Tick(Time.deltaTime);
+            //if (_svc == null) return;
+            //if(_svc.IsInitialized) _svc.Tick(Time.deltaTime);
 
-            if (Input.GetKeyDown(KeyCode.P)) // debug
-            {
-                CheatResetRace();
-            }
+            //if (Input.GetKeyDown(KeyCode.P)) // debug
+            //{
+            //    CheatResetRace();
+            //}
 
-            if (Input.GetKeyDown(KeyCode.O)) // debug
-            {
-                CheatPlusBot();
-            }
+            //if (Input.GetKeyDown(KeyCode.O)) // debug
+            //{
+            //    CheatPlusBot();
+            //}
 
-            if (Input.GetKeyDown(KeyCode.K)) // debug
-            {
-                _svc.Debug_AdvanceBotsToEnd();
-            }
+            //if (Input.GetKeyDown(KeyCode.K)) // debug
+            //{
+            //    _svc.Debug_AdvanceBotsToEnd();
+            //}
 
-            if(Input.GetKeyDown(KeyCode.I)) // debug
-            {
-                //DebugWinLevel();
-                CheatPlayerWinUsingFakeUtc();
-            }
+            //if(Input.GetKeyDown(KeyCode.I)) // debug
+            //{
+            //    //DebugWinLevel();
+            //    CheatPlayerWinUsingFakeUtc();
+            //}
 
-            if(Input.GetKeyDown(KeyCode.U)) // debug
-            {
-                CheatEndRace();
-            }
+            //if(Input.GetKeyDown(KeyCode.U)) // debug
+            //{
+            //    CheatEndRace();
+            //}
 
-            if (Input.GetKeyDown(KeyCode.M))
-            {
-                DebugWinLevel();
-            }
+            //if (Input.GetKeyDown(KeyCode.M))
+            //{
+            //    DebugWinLevel();
+            //}
 
-            if (Input.GetKeyDown(KeyCode.C))
-            {
-                ClearCurrentRun();
-            }
+            //if (Input.GetKeyDown(KeyCode.C))
+            //{
+            //    ClearCurrentRun();
+            //}
         }
 
         public void DebugWinLevel()
