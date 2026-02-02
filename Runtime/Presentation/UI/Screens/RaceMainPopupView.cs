@@ -101,37 +101,29 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             var allParticipants = new List<RaceParticipant> { currentRun.Player };
             allParticipants.AddRange(currentRun.Opponents);
 
-            // Xác định thứ tự về đích (finish order)
-            var finishedList = allParticipants
-                            .Where(p => p.HasFinished)
-                            .OrderBy(p => p.FinishedUtcSeconds)
-                            .ToList();
+            // Tie-break ổn định theo thứ tự xuất hiện ban đầu (player trước, rồi opponents theo list)
+            var orderIndex = new Dictionary<RaceParticipant, int>(allParticipants.Count);
+            for (int i = 0; i < allParticipants.Count; i++)
+                orderIndex[allParticipants[i]] = i;
 
+            // Standings: finished trước (theo time), rồi unfinished (theo level desc)
+            var standings = allParticipants
+                .OrderBy(p => p.HasFinished ? 0 : 1)
+                .ThenBy(p => p.HasFinished ? p.FinishedUtcSeconds : long.MaxValue)
+                .ThenByDescending(p => p.HasFinished ? int.MinValue : p.LevelsCompleted)
+                .ThenBy(p => orderIndex[p]) // ổn định
+                .ToList();
 
-            // Gán rank cho người đã finish, ai chưa finish thì rank = -1
-            var participantRanks = new Dictionary<RaceParticipant, int>();
-            for (int i = 0; i < finishedList.Count; i++)
-            {
-                participantRanks[finishedList[i]] = i + 1; // rank bắt đầu từ 1
-            }
+            // Gán rank 1..N cho tất cả
+            var participantRanks = new Dictionary<RaceParticipant, int>(standings.Count);
+            for (int i = 0; i < standings.Count; i++)
+                participantRanks[standings[i]] = i + 1;
 
-            // Xác định leader
-            RaceParticipant leader = null;
-            if (finishedList.Count > 0)
-            {
-                // Nếu đã có người finish, leader là người finish đầu tiên
-                leader = finishedList[0];
-            }
-            else
-            {
-                // Nếu chưa ai finish, leader là người có LevelsCompleted cao nhất
-                int maxLevel = allParticipants.Max(p => p.LevelsCompleted);
-                var topLevel = allParticipants.Where(p => p.LevelsCompleted == maxLevel).ToList();
-                leader = topLevel.FirstOrDefault(p => p == currentRun.Player) ?? topLevel.First();
-            }
+            // Leader = người đứng đầu bảng
+            RaceParticipant leader = standings.Count > 0 ? standings[0] : null;
 
             // Render player
-            int userRank = participantRanks.ContainsKey(currentRun.Player) ? participantRanks[currentRun.Player] : -1;
+            int userRank = participantRanks[currentRun.Player];
             bool isUserLeader = leader == currentRun.Player;
 
             _userTrack.InitAsPlayer(currentRun.Player, currentRun.GoalLevels, isUserLeader, userRank);
@@ -141,7 +133,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 if (i < currentRun.Opponents.Count)
                 {
                     var opponent = currentRun.Opponents[i];
-                    int opponentRank = participantRanks.ContainsKey(opponent) ? participantRanks[opponent] : -1;
+                    int opponentRank = participantRanks[opponent];
                     bool isOpponentLeader = leader == opponent;
                     _opponentTracks[i].gameObject.SetActive(true);
                     _opponentTracks[i].InitAsOpponent(currentRun.Opponents[i], currentRun.GoalLevels, isOpponentLeader, opponentRank);
