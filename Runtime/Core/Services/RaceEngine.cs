@@ -58,9 +58,92 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 logString = $"[ERROR] SeedBots cannot fill need={need}, got={run.Opponents.Count}. BotPool empty?";
             }
 
+            // 3.5) Tune bot params theo nhịp race hiện tại.
+            // BotPool (json) nên chỉ là "identity/profile"; tốc độ + humanization phải scale theo run.
+            TuneBotsForRun(run, utcNow);
+
             // 4) Shuffle để boss không luôn đứng đầu
             Shuffle(run.Opponents);
         }
+
+        // Scale bot speed/humanization theo run để phù hợp race ngắn (8h/race nhưng gameplay thực 10-20 phút).
+        // Mục tiêu:
+        // - AvgSecondsPerLevel bám sát nhịp gameplay (≈ 120s/level) thay vì phụ thuộc data 24h.
+        // - Tắt/giảm Sleep + Stuck cho race ngắn để leaderboard không "đứng hình".
+        private void TuneBotsForRun(RaceRun run, long utcNow)
+        {
+            if (run == null) return;
+
+            // Heuristic race ngắn: goal nhỏ hoặc tổng thời gian dự kiến (goal * 120s) <= 30 phút.
+            bool isShortRace = run.GoalLevels > 0 &&
+                               (run.GoalLevels <= 12 || (run.GoalLevels * 120) <= 1800);
+
+            // Base pace: assume 2 phút / level (design mới). Clamp để không cực đoan.
+            float baseSecondsPerLevel = 120f;
+            if (run.GoalLevels > 0)
+            {
+                // dự kiến tổng thời gian bot finish: 10-25 phút (tuỳ goal)
+                float targetFinishSeconds = UnityEngine.Mathf.Clamp(
+                    run.GoalLevels * 120f,
+                    600f,
+                    1500f
+                );
+
+                baseSecondsPerLevel = UnityEngine.Mathf.Clamp(
+                    targetFinishSeconds / run.GoalLevels,
+                    70f,
+                    180f
+                );
+            }
+
+            for (int i = 0; i < run.Opponents.Count; i++)
+            {
+                var bot = run.Opponents[i];
+                if (bot == null || !bot.IsBot) continue;
+
+                // Pace multiplier theo personality.
+                float mult = GetPaceMultiplier(bot.Personality);
+                bot.AvgSecondsPerLevel = baseSecondsPerLevel * mult;
+
+                if (isShortRace)
+                {
+                    // Race ngắn: disable sleep/stuck để tránh bot đứng yên quá lâu.
+                    bot.SleepDurationHours = 0;
+                    bot.StuckChancePerHour = 0f;
+                    bot.StuckMinMinutes = 0;
+                    bot.StuckMaxMinutes = 0;
+                    bot.StuckUntilUtcSeconds = 0;
+
+                    // Jitter nhẹ hơn để standings ổn định (vẫn có cảm giác "người").
+                    bot.JitterPct = UnityEngine.Mathf.Clamp(bot.JitterPct, 0.05f, 0.12f);
+                }
+                else
+                {
+                    // Race dài (legacy): giữ nguyên data trong bot pool.
+                    // Tuy nhiên tránh trường hợp stuckUntil nằm quá xa tương lai khi restart.
+                    if (bot.StuckUntilUtcSeconds < utcNow)
+                        bot.StuckUntilUtcSeconds = 0;
+                }
+            }
+        }
+
+        private float GetPaceMultiplier(BotPersonality p)
+        {
+            // Gợi ý phân phối:
+            // - Boss nhanh hơn
+            // - Noob chậm hơn
+            // - Normal bám base
+            switch (p)
+            {
+                case BotPersonality.Boss:
+                    return UnityEngine.Random.Range(0.75f, 0.92f);
+                case BotPersonality.Noob:
+                    return UnityEngine.Random.Range(1.20f, 1.55f);
+                default:
+                    return UnityEngine.Random.Range(0.95f, 1.20f);
+            }
+        }
+
 
         //Chuẩn hoá quota bot(Boss/Normal/Noob) sao cho tổng đúng bằng need.
         //Nếu thiếu → dồn vào Noob.
