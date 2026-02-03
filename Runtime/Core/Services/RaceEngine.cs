@@ -23,7 +23,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             run.Opponents.Clear();
             // Pick first N-1 (later: random w/ RNG provider)
-            var need = System.Math.Max(0, cfg.PlayersPerRace - 1);
+            int roundIndex = run != null ? run.RoundIndex : 0; // no-run => round0
+            var need = System.Math.Max(0, cfg.GetRoundSettings(roundIndex).PlayersPerRace - 1);
 
             // 1) Tính quota theo config
             var comp = cfg.BotComposition;

@@ -364,7 +364,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             RefreshEligibility(localNow);
 
-            var max = ActiveConfigForRunOrCursor().GoalLevels;
+            var max = ActiveRoundSettingsForRunOrCursor().GoalLevels;
 
             if (_run != null && State == RaceEventState.InRace)
             {
@@ -544,6 +544,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             // Create run NOW
             var cfg = ActiveConfigForRunOrCursor();
+            var round0 = GetRoundSettings(cfg, 0);
             var utcNow = NowUtcSeconds();
             var localNow = NowLocal();
 
@@ -554,7 +555,13 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             var startUtc = utcNow;
             long endUtc = utcNow + (long)TimeSpan.FromHours(RoundHours).TotalSeconds; // Round0 fixed 8h
 
-            _run = RaceRun.CreateNew(Guid.NewGuid().ToString("N"), startUtc, endUtc, cfg.GoalLevels, cfg.PlayersPerRace);
+            _run = RaceRun.CreateNew(
+                Guid.NewGuid().ToString("N"),
+                startUtc,
+                endUtc,
+                round0.GoalLevels,
+                 round0.PlayersPerRace);
+
             _run.ConfigIndex = _save.ConfigCursor;
 
             _run.WindowId = windowId;
@@ -573,8 +580,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 IsBot = false
             };
 
-            _raceEngine.EnsureBotsSeeded(_run, utcNow,CurrentLevel, ActiveConfigForRunOrCursor(), _botPool, out string logString);
-            if(logString!=String.Empty)
+            _raceEngine.EnsureBotsSeeded(_run, utcNow, CurrentLevel, cfg, _botPool, out string logString);
+
+            if (logString!=String.Empty)
             {
                 Log(logString);
             }
@@ -759,6 +767,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             long utcNow = NowUtcSeconds();
 
             int nextRoundIndex = Math.Clamp(_run!.RoundIndex + 1, 0, 2);
+            var nextRound = GetRoundSettings(cfg, nextRoundIndex);
 
             // Compute end time by round index
             long endUtc;
@@ -782,7 +791,13 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             int configIndex = _run.ConfigIndex;
 
             // Create a fresh run for the new round
-            var newRun = RaceRun.CreateNew(Guid.NewGuid().ToString("N"), utcNow, endUtc, cfg.GoalLevels, cfg.PlayersPerRace);
+            var newRun = RaceRun.CreateNew(
+                 Guid.NewGuid().ToString("N"),
+                 utcNow,
+                 endUtc,
+                 nextRound.GoalLevels,
+                 nextRound.PlayersPerRace);
+
             newRun.ConfigIndex = configIndex;
             newRun.WindowId = windowId;
             newRun.RoundIndex = nextRoundIndex;
@@ -963,8 +978,15 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                     : new DateTimeOffset(_raceScheduler.ComputeNextResetLocal(localNow, cfg.ResetHourLocal)).ToUnixTimeSeconds();
             }
 
+            var round = GetRoundSettings(cfg, _run.RoundIndex);
             // Create fresh run instance for same round (simplest & safest reset)
-            var newRun = RaceRun.CreateNew(Guid.NewGuid().ToString("N"), utcNow, endUtc, cfg.GoalLevels, cfg.PlayersPerRace);
+            var newRun = RaceRun.CreateNew(
+                Guid.NewGuid().ToString("N"),
+                utcNow,
+                endUtc,
+                round.GoalLevels,
+                round.PlayersPerRace);
+
             newRun.ConfigIndex = configIndex;
             newRun.WindowId = windowId;
             newRun.RoundIndex = roundIndex;
@@ -1029,14 +1051,15 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public RaceReward GetRewardForRank(int rank)
         {
             var cfg = ActiveConfigForRunOrCursor(); // run-config
+            var round = ActiveRoundSettingsForRunOrCursor();
 
             return rank switch
             {
-                1 => cfg.Rank1Reward,
-                2 => cfg.Rank2Reward,
-                3 => cfg.Rank3Reward,
-                4 => cfg.Rank4Reward,
-                _ => cfg.Rank5Reward,
+                1 => round.Rank1Reward,
+                2 => round.Rank2Reward,
+                3 => round.Rank3Reward,
+                4 => round.Rank4Reward,
+                _ => round.Rank5Reward,
             };
         }
 
@@ -1113,6 +1136,19 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             return GetConfigByIndex(eligibleIndex);
         }
+
+        private RaceEventConfig.RoundSettings ActiveRoundSettingsForRunOrCursor()
+        {
+            var cfg = ActiveConfigForRunOrCursor();
+            int roundIndex = _run != null ? _run.RoundIndex : 0; // no-run => round0
+            return cfg.GetRoundSettings(roundIndex);
+        }
+
+        private RaceEventConfig.RoundSettings GetRoundSettings(RaceEventConfig cfg, int roundIndex)
+        {
+            return cfg.GetRoundSettings(roundIndex);
+        }
+
         private int GetEligibleCursorIndex()
         {
             // cursor base (đã clamp)

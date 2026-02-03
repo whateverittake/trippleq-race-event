@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
+using static TrippleQ.Event.RaceEvent.Runtime.RaceEventConfig;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
 {
@@ -42,12 +44,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         [Header("Race Reward")]
         [Tooltip("2 ways to get reward (use bundleID follow Nhan core or simply int)")]
         public bool UseBundleId = true;
-        [Space]
-        public RaceReward Rank1Reward;
-        public RaceReward Rank2Reward;
-        public RaceReward Rank3Reward;
-        public RaceReward Rank4Reward;
-        public RaceReward Rank5Reward;
+
+        [Header("Per-round settings (RoundIndex 0..2)")]
+        public List<RoundSettings> Rounds;
 
         [Space]
         [SerializeField]
@@ -78,17 +77,11 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 SearchingDurationSeconds = SearchingDurationSeconds,
                 KeepClaimedHours = KeepClaimedHours,
 
-                GoalLevels = GoalLevels,
-                PlayersPerRace = PlayersPerRace,
                 DurationHours = DurationHours,
 
-                Rank1Reward = Rank1Reward,
-                Rank2Reward = Rank2Reward,
-                Rank3Reward = Rank3Reward,
-                Rank4Reward = Rank4Reward,
-                Rank5Reward = Rank5Reward,
+                Rounds = Rounds,
 
-                BotComposition= _botComposition,
+                BotComposition = _botComposition,
 
                 AllowExtend1H= AllowExtend1H,
                 ExtendHours= ExtendHours,

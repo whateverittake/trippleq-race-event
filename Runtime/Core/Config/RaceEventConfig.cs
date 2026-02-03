@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace TrippleQ.Event.RaceEvent.Runtime
@@ -6,6 +7,19 @@ namespace TrippleQ.Event.RaceEvent.Runtime
     [Serializable]
     public struct RaceEventConfig
     {
+        [Serializable]
+        public struct RoundSettings
+        {
+            public int GoalLevels;
+            public int PlayersPerRace;
+
+            public RaceReward Rank1Reward;
+            public RaceReward Rank2Reward;
+            public RaceReward Rank3Reward;
+            public RaceReward Rank4Reward;
+            public RaceReward Rank5Reward;
+        }
+
         public bool Enabled;
         public int MinPlayerLevel;
         public bool BlockDuringTutorial;
@@ -20,23 +34,34 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
         public RaceBotComposition BotComposition;
 
-        public int GoalLevels;       // ví dụ 20
-        public int PlayersPerRace;   // ví dụ 5
         public int DurationHours;    // ví dụ 24
 
         public bool AllowExtend1H;
         public int ExtendHours;           // default 1
 
-        public RaceReward Rank1Reward;
-        public RaceReward Rank2Reward;
-        public RaceReward Rank3Reward;
-        public RaceReward Rank4Reward;
-        public RaceReward Rank5Reward;
-
         [Space]
         public ExtendPayType ExtendPayType; // config quyết định pay kiểu gì
         public int ExtendCoinCost;          // dùng khi Coins
         public int ExtendAdsCount;          // dùng khi WatchAds (thường = 1)
+
+        [Header("Per-round settings (RoundIndex 0..2)")]
+        public List<RoundSettings> Rounds;
+
+        public RoundSettings GetRoundSettings(int roundIndex)
+        {
+            if (Rounds == null || Rounds.Count == 0)
+            {
+                return new RoundSettings();
+            }
+
+            if (Rounds != null && Rounds.Count > 0)
+            {
+                int idx = Mathf.Clamp(roundIndex, 0, Rounds.Count - 1);
+                return Rounds[idx];
+            }
+
+            return new RoundSettings();
+        }
     }
 
     [Serializable]
