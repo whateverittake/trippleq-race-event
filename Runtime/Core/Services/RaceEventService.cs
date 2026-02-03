@@ -180,6 +180,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // Update eligibility once on init
             RefreshEligibility(NowLocal());
 
+            // Ensure UI snapshot exists for current run (View reads snapshot only).
+            if (_run != null)
+                RefreshUiSnapshot();
+
             PublishRunUpdated();
         }
 
@@ -291,6 +295,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // Notify host to actually grant economy items
             OnRewardGranted?.Invoke(reward);
 
+            RefreshUiSnapshot();
+
             PublishRunUpdated();
             Log($"Claimed. Rank={_run.FinalPlayerRank}, RewardCoins={reward.Gold}");
 
@@ -336,6 +342,7 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 _lastSimulatedUtc = utcNow;
                 _save.CurrentRun = _run;
                 TrySave();
+                RefreshUiSnapshot();
                 PublishRunUpdated();
             }
         }
@@ -372,6 +379,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                     _run.Player.HasFinished = true;
                     _run.Player.FinishedUtcSeconds = utcNow;
 
+                    RefreshUiSnapshot();
+
                     Log(
                             $"[RACE][PLAYER FINISH] levels={_run.Player.LevelsCompleted}/{_run.GoalLevels} finishUtc={utcNow}"
                         );
@@ -384,6 +393,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
                 _save.CurrentRun = _run;
                 TrySave();
+
+                RefreshUiSnapshot();
+
                 PublishRunUpdated();
 
                 // NOTE: no early end here
@@ -574,6 +586,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             _save.SearchingStartUtcSeconds = 0;
 
             TrySave();
+
+            RefreshUiSnapshot();
+
             PublishRunUpdated();
 
             // Show main race screen
@@ -802,6 +817,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             // Move to InRace
             _sm.SetState(RaceEventState.InRace);
 
+            RefreshUiSnapshot();
+
             PublishRunUpdated();
             RequestPopup(new PopupRequest(PopupType.Main));
             Log($"StartNextRound accepted. RoundIndex={_run.RoundIndex} EndUtc={_run.EndUtcSeconds}");
@@ -847,6 +864,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             {
                 _save.CurrentRun = _run;
                 TrySave();
+
+                RefreshUiSnapshot();
+
                 PublishRunUpdated();
                 Log("Bots simulated (tick)");
             }
@@ -903,6 +923,8 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             {
                 RequestPopup(new PopupRequest(PopupType.Ended)); // dùng Ended popup, đổi nút thành Claimed
             }
+
+            RefreshUiSnapshot();
 
             PublishRunUpdated();
             Log($"Race finalized. Winner={_run.WinnerId}, PlayerRank={_run.FinalPlayerRank}");
@@ -976,6 +998,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
                 Log(logString);
 
             TrySave();
+
+            RefreshUiSnapshot();
+
             PublishRunUpdated();
 
             // Bring user back to main race UI if they are already inside race views
@@ -1200,6 +1225,15 @@ namespace TrippleQ.Event.RaceEvent.Runtime
             {
                 _save.SeenPopupTypes.Remove(key);
             }
+        }
+
+        private void RefreshUiSnapshot()
+        {
+            if (_run == null) return;
+
+            // Popup cần đủ N người để render rank đúng (player + opponents)
+            int topN = Math.Max(1, _run.PlayersCount);
+            _run.UiSnapshot = _raceEngine.BuildLeaderboardSnapshot(_run, topN);
         }
 
         #region ELIGIBILITY

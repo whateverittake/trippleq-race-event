@@ -38,6 +38,10 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         public long DayResetUtcSeconds;
         public long NextAllowedStartUtcSeconds;
 
+        // UI snapshot (computed by service/engine, view only reads)
+        // NonSerialized để không lưu vào save.
+        [NonSerialized] public LeaderboardSnapshot UiSnapshot;
+
         public IEnumerable<RaceParticipant> AllParticipants()
         {
             yield return Player;

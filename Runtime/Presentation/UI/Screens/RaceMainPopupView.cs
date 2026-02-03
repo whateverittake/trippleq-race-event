@@ -95,43 +95,25 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         private void RenderCurrentUI(RaceRun currentRun)
         {
             if (currentRun == null) return;
-            //nếu finish, cần biết đc thứ tự finish để show quà
 
-            // Gom tất cả participant (player + opponents)
-            var allParticipants = new List<RaceParticipant> { currentRun.Player };
-            allParticipants.AddRange(currentRun.Opponents);
+            // ✅ View chỉ render standings từ snapshot
+            var standings = currentRun.UiSnapshot.Top as IList<RaceParticipant>;
+            if (standings == null || standings.Count == 0)
+            {
+                // Fallback an toàn (nếu snapshot chưa kịp refresh)
+                standings = new List<RaceParticipant> { currentRun.Player };
+                standings = standings.Concat(currentRun.Opponents).ToList();
+            }
 
-            // Tie-break ổn định theo thứ tự xuất hiện ban đầu (player trước, rồi opponents theo list)
-            var orderIndex = new Dictionary<RaceParticipant, int>(allParticipants.Count);
-            for (int i = 0; i < allParticipants.Count; i++)
-                orderIndex[allParticipants[i]] = i;
-
-            // Standings: finished trước (theo time), rồi unfinished (theo level desc)
-            var standings = allParticipants
-                .OrderBy(p => p.HasFinished ? 0 : 1)
-                .ThenBy(p => 
-                { 
-                    if (!p.HasFinished) return long.MaxValue;
-                    if (p.FinishedUtcSeconds > 0) return p.FinishedUtcSeconds;
-                    if (p.LastUpdateUtcSeconds > 0) return p.LastUpdateUtcSeconds;
-                    return long.MaxValue;
-                })
-                .ThenByDescending(p => p.HasFinished ? int.MinValue : p.LevelsCompleted)
-                .ThenBy(p => orderIndex[p]) // ổn định
-                .ToList();
-
-            // Gán rank 1..N cho tất cả
+            // rank = index + 1
             var participantRanks = new Dictionary<RaceParticipant, int>(standings.Count);
             for (int i = 0; i < standings.Count; i++)
                 participantRanks[standings[i]] = i + 1;
 
-            // Leader = người đứng đầu bảng
             RaceParticipant leader = standings.Count > 0 ? standings[0] : null;
 
-            // Render player
             int userRank = participantRanks[currentRun.Player];
             bool isUserLeader = leader == currentRun.Player;
-
             _userTrack.InitAsPlayer(currentRun.Player, currentRun.GoalLevels, isUserLeader, userRank);
 
             for (int i = 0; i < _opponentTracks.Length; i++)

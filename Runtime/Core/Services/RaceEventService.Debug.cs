@@ -371,6 +371,9 @@ namespace TrippleQ.Event.RaceEvent.Runtime
 
             _save.CurrentRun = _run;
             TrySave();
+
+            RefreshUiSnapshot();
+
             PublishRunUpdated();
 
             FinalizeIfTimeUp(utcNow);

@@ -345,12 +345,25 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         //Dùng để tránh spam Save/Publish mỗi tick khi không đổi.
         public int ComputeRunProgressHash(RaceRun run)
         {
+            if (run == null) return 0;
+
             unchecked
             {
                 int h = 17;
+
+                // player
                 h = h * 31 + run.Player.LevelsCompleted;
-                for (int i = 0; i < run.Opponents.Count; i++)
-                    h = h * 31 + run.Opponents[i].LevelsCompleted;
+                h = h * 31 + (run.Player.HasFinished ? 1 : 0);
+
+                // opponents / bots
+                var opps = run.Opponents; // hoặc Bots
+                for (int i = 0; i < opps.Count; i++)
+                {
+                    var p = opps[i];
+                    h = h * 31 + p.LevelsCompleted;
+                    h = h * 31 + (p.HasFinished ? 1 : 0);       
+                }
+
                 return h;
             }
         }
@@ -362,26 +375,42 @@ namespace TrippleQ.Event.RaceEvent.Runtime
         {
             if (run == null) return LeaderboardSnapshot.Empty();
 
-            // Normalize: finished nhưng thiếu FinishedUtcSeconds -> fallback bằng LastUpdateUtcSeconds
-            // Tránh case bot finish trước nhưng time=0 khiến UI đảo rank khi player finish.
-            var all = run.AllParticipants();
+            // Build list: player first, then opponents (để stable order)
+            var all = new List<RaceParticipant>(1 + run.Opponents.Count) { run.Player };
+            all.AddRange(run.Opponents);
 
-            foreach (var p in all)
-            {
-                if (!p.HasFinished) continue;
-                if (p.FinishedUtcSeconds > 0) continue;
-                if (p.LastUpdateUtcSeconds > 0) p.FinishedUtcSeconds = p.LastUpdateUtcSeconds;
-            }
+            var orderIndex = new Dictionary<RaceParticipant, int>(all.Count);
+            for (int i = 0; i < all.Count; i++) orderIndex[all[i]] = i;
 
-            // 1) lấy standings theo cùng 1 rule duy nhất
-            // nếu RaceStandings.Compute đã sort đúng theo rule finishUtc / progress thì dùng lại luôn
-            var standings = RaceStandings.Compute(all, run.GoalLevels);
+            var player = run.Player;
 
-            // 2) lấy rank player
+            // ✅ Standings rule:
+            // - finished first (by finish time, fallback)
+            // - unfinished by levels desc
+            // - unfinished tie (same level): player ALWAYS loses tie (stays after bots)
+            var standings = all
+                .OrderBy(p => p.HasFinished ? 0 : 1)
+                .ThenBy(p =>
+                {
+                    if (!p.HasFinished) return long.MaxValue;
+                    if (p.FinishedUtcSeconds > 0) return p.FinishedUtcSeconds;
+                    if (p.LastUpdateUtcSeconds > 0) return p.LastUpdateUtcSeconds;
+                    return long.MaxValue;
+                })
+                .ThenByDescending(p => p.HasFinished ? int.MinValue : p.LevelsCompleted)
+                .ThenBy(p =>
+                {
+                    if (p.HasFinished) return 0;
+                    return ReferenceEquals(p, player) ? 1 : 0; // bot(0) trước, player(1) sau
+                })
+                .ThenBy(p => orderIndex[p])
+                .ToList();
+
+            // player rank
             int playerRank = standings.FindIndex(p => p.Id == run.Player.Id) + 1;
             if (playerRank <= 0) playerRank = standings.Count;
 
-            // 3) topN
+            // topN (popup thường dùng PlayersCount để đủ rank)
             var top = standings.Count <= topN ? standings : standings.GetRange(0, topN);
 
             return new LeaderboardSnapshot(top, playerRank, run.Player.HasFinished);
