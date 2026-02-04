@@ -25,46 +25,175 @@ MonoBehaviour:
   AllowExtend1H: 1
   ExtendHours: 1
   UseBundleId: 1
-  Rank1Reward:
-    BundleId: 
-    Gold: 300
-    Gems: 0
-    Booster1: 0
-    Booster2: 0
-    Booster3: 0
-    Booster4: 0
-  Rank2Reward:
-    BundleId: 
-    Gold: 200
-    Gems: 0
-    Booster1: 0
-    Booster2: 0
-    Booster3: 0
-    Booster4: 0
-  Rank3Reward:
-    BundleId: 
-    Gold: 150
-    Gems: 0
-    Booster1: 0
-    Booster2: 0
-    Booster3: 0
-    Booster4: 0
-  Rank4Reward:
-    BundleId: 
-    Gold: 80
-    Gems: 0
-    Booster1: 0
-    Booster2: 0
-    Booster3: 0
-    Booster4: 0
-  Rank5Reward:
-    BundleId: 
-    Gold: 50
-    Gems: 0
-    Booster1: 0
-    Booster2: 0
-    Booster3: 0
-    Booster4: 0
+  Rounds:
+  - GoalLevels: 0
+    PlayersPerRace: 0
+    Rank1Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+    Rank2Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+    Rank3Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+    Rank4Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+    Rank5Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+  - GoalLevels: 0
+    PlayersPerRace: 0
+    Rank1Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+    Rank2Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+    Rank3Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+    Rank4Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+    Rank5Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+  - GoalLevels: 0
+    PlayersPerRace: 0
+    Rank1Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+    Rank2Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+    Rank3Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+    Rank4Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+    Rank5Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+  - GoalLevels: 0
+    PlayersPerRace: 0
+    Rank1Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+    Rank2Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+    Rank3Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+    Rank4Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
+    Rank5Reward:
+      BundleId: 
+      Gold: 0
+      Gems: 0
+      Booster1: 0
+      Booster2: 0
+      Booster3: 0
+      Booster4: 0
   _botComposition:
     BossCount: 1
     NormalCount: 1
